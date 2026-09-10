@@ -638,6 +638,53 @@ const PAD_ROW_HUE = [
 const lastPad = new Array(PAD_ROW_LEN).fill(-1);
 const lastLed = new Array(8).fill(-1);
 
+/*
+ * MOVE PAINTS THESE PADS TOO, AND A DIFF CACHE CANNOT SEE IT.
+ *
+ * The pad block stops pad presses reaching Move; it says nothing about the
+ * LEDS. Move goes on lighting the pad of any note sounding on the track -- and
+ * the notes this module plays ARE sounding on that track, so every chord it
+ * plays writes its own pitches onto the grid, over the top of the rows drawn
+ * here. Reported from the device as the played chord notes "shining through"
+ * the pads.
+ *
+ * Our writes are DIFFED against `lastPad`, which is bookkeeping of what we
+ * believe each pad shows -- and Move overwriting a pad falsifies exactly that
+ * belief, so the diff then suppresses the very repaint that would fix it. The
+ * bleed is permanent rather than momentary for that reason.
+ *
+ * The shim mirrors MOVE's own LED intent into overlay SHM, so a change there
+ * is Move having painted. That invalidates our cache for those pads and the
+ * ordinary paint below reasserts them: the note flashes for a frame or two
+ * instead of staying. Throttled, because the snapshot builds an object and
+ * this runs on the draw path -- a tenth of a second is invisible to the eye
+ * and costs one SHM read in twelve frames.
+ *
+ * The alternative is the host suppressing Move's pad LEDs whenever the block
+ * is held, which is the tidier answer and is not ours to make here: it is a
+ * shim change, global to every module, and it belongs upstream.
+ */
+const movePadSeen = new Array(32).fill(-2);
+let padReconAt = 0;
+const PAD_RECON_MS = 100;
+
+function reconcilePadLeds(now) {
+    if (now - padReconAt < PAD_RECON_MS) return;
+    padReconAt = now;
+    if (typeof shadow_get_pad_led_snapshot !== "function") return;
+    const snap = shadow_get_pad_led_snapshot();
+    if (!snap) return;
+    for (let n = 0; n < 32; n++) {
+        const c = snap[String(PAD_ROW1 + n)] | 0;
+        if (c === movePadSeen[n]) continue;
+        movePadSeen[n] = c;
+        /* Move wrote this pad, so whatever we believed it shows is wrong. */
+        const row = n >> 3, col = n & 7;
+        if (row === 0) lastPad[col] = -1;
+        else lastParamPad[row - 1][col] = -1;
+    }
+}
+
 /* 0..1 for a value, or null when there is nothing to show. PARAM_RANGES is
  * generated from module.json, so a range here cannot drift from the contract. */
 function normalizedOf(key, raw) {
@@ -1648,6 +1695,9 @@ globalThis.canvas_overlay = {
                 || shadow_get_display_mode() === 1))
             host_pad_block(1);
 
+        /* Anything Move has painted over invalidates our cache for those pads,
+         * so the two updates below reassert them -- see reconcilePadLeds. */
+        reconcilePadLeds(now);
         /* The pad row follows the playhead, so it updates per frame like the
          * head does -- and costs nothing when nothing moved. */
         updatePadLeds();
