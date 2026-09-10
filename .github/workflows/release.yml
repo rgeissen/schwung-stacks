@@ -1,0 +1,31 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tests run FIRST and the release does not happen without them: a
+      # module tarball is installed by people who cannot see this repo.
+      - name: Tests
+        run: |
+          fail=0
+          for t in tests/*.sh; do bash "$t" || fail=1; done
+          exit $fail
+
+      - name: Build
+        run: scripts/build.sh
+
+      - name: Check the tag matches src/module.json
+        run: |
+          v=$(python3 -c "import json;print(json.load(open('src/module.json'))['version'])")
+          [ "refs/tags/v$v" = "$GITHUB_REF" ] || {
+            echo "tag $GITHUB_REF does not match module.json version $v"; exit 1; }
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/stacks-module.tar.gz

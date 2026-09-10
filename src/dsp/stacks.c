@@ -220,7 +220,7 @@ static int scale_index_from_name(const char *name) {
     return 0;
 }
 
-/* ---- BEGIN GENERATED chain_params (tools/stacks/gen_chain_params.py) ---- */
+/* ---- BEGIN GENERATED chain_params (tools/gen_chain_params.py) ---- */
 static const char CHAIN_PARAMS_JSON[] =
     "[{\"key\":\"grid\",\"name\":\"Grid\",\"short_name\":\"Grid\",\"type\":\"canvas\",\"canva"
     "s_script\":\"canvas.js\",\"show_value\":false,\"show_footer\":false,\"claims_jog_click\""
@@ -3941,7 +3941,7 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
      * appearing as an ordinary row of knob cells with no grid, and nothing
      * logged, because "no chain_params" is a legal answer.
      *
-     * Generated from module.json by tools/stacks/gen_chain_params.py so the
+     * Generated from module.json by tools/gen_chain_params.py so the
      * two cannot drift; test_stacks_shapes.sh fails when they do.
      */
     if (strcmp(key, "chain_params") == 0)
