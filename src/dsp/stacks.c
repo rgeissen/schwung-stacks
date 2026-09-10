@@ -843,6 +843,7 @@ typedef struct {
 
     /* --- pad override: a pad hit jumps to and holds that chord --- */
     int held_pad;       /* -1 = none */
+    unsigned held_mask; /* which pitch classes are held from OUTSIDE, one bit each */
 
     /*
      * FORCED STEP -- one mechanism for two gestures. A held pad and a preview
@@ -2273,6 +2274,7 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     st->read_mode = 0;
     st->stamp_mode = 0;
     st->held_pad = -1;
+    st->held_mask = 0;
     st->cur_step = -1;
     st->recv_ch = 1;
     for (int i = 0; i < STK_MAX_VOICES; i++) st->voice[i].note = -1;
@@ -2310,6 +2312,20 @@ static void stk_destroy(void *instance) {
         pthread_join(st->worker, NULL);
     }
     free(st);
+}
+
+/*
+ * Is this note one of OURS, sounding right now?
+ *
+ * The module's output goes to the track and the track comes back -- as Move's
+ * echo while it plays, and again as a clip once you have stamped one. Without
+ * this, those notes are read as chord SELECTORS (see the note handler), so the
+ * module spends the bar being dragged around by its own tail.
+ */
+static int is_own_voice(const stk_t *st, int note) {
+    for (int v = 0; v < STK_MAX_VOICES; v++)
+        if (st->voice[v].note == note) return 1;
+    return 0;
 }
 
 static int stk_process_midi(void *instance, const uint8_t *in, int in_len,
@@ -2416,15 +2432,48 @@ static int stk_process_midi(void *instance, const uint8_t *in, int in_len,
      * absolute note so it works the same from a Move pad, a clip and an
      * external keyboard, none of which agree on where "the first pad" is.
      */
+    /*
+     * A NOTE THIS MODULE IS SOUNDING IS NOT A NOTE SOMEBODY PLAYED AT IT.
+     *
+     * An Am7 contains a C, C is pitch class 0, and pitch class 0 is chord 1 --
+     * so the chords this module played were selecting chords, and a selection
+     * is armed with HOLD, whose voices never expire. Captured on a device as
+     * `playing` jumping 3,1,1,0,2,2,1,2 while the position advanced perfectly
+     * smoothly, and heard as a chord that never moves on.
+     *
+     * Filtering on the SOUNDING VOICES rather than on "is the transport
+     * running" keeps both real uses alive: a clip written to drive the module
+     * still drives it, a keyboard still plays it live, and only its own tail
+     * is ignored. A coincidence -- playing a note it is already sounding --
+     * costs one selection, which is nothing beside the loop it prevents.
+     */
     if ((status & 0xF0) == 0x90 && in_len >= 3 && in[2] > 0) {
+        if (is_own_voice(st, in[1])) return 0;
         int pc = in[1] % 12;
-        if (pc < st->prog.count) { st->held_pad = pc; return 0; }
+        if (pc < st->prog.count) {
+            st->held_mask |= 1u << pc;
+            st->held_pad = pc;
+        }
         return 0;
     }
     if (((status & 0xF0) == 0x80 || ((status & 0xF0) == 0x90 && in_len >= 3 && in[2] == 0))
         && in_len >= 2) {
+        if (is_own_voice(st, in[1])) return 0;
+        /*
+         * HELD IS A SET, NOT A SLOT. It was one pitch class, cleared only when
+         * a note-off matched it -- so two notes held together left the first
+         * one's release doing nothing, and if the matching release was ever
+         * lost (a MIDI_IN slot zeroed behind a terminator is a documented way
+         * to lose one) the selection was stranded ON, holding that chord for
+         * the rest of the session. What is still down decides.
+         */
         int pc = in[1] % 12;
-        if (pc == st->held_pad) { st->held_pad = -1; return 0; }
+        st->held_mask &= ~(1u << pc);
+        if (st->held_mask == 0) st->held_pad = -1;
+        else if (pc == st->held_pad) {
+            for (int i = 0; i < 12; i++)
+                if (st->held_mask & (1u << i)) { st->held_pad = i; break; }
+        }
         return 0;
     }
 
