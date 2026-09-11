@@ -268,6 +268,19 @@ grep -q 'function armedNow(){ return String(get("status")) === "armed"; }' "$PAN
 grep -q 'function drawStampMark' "$CANVAS" \
   || note "canvas.js: the staff no longer shows what the stamp is doing"
 
+# --- the head belongs to the MODULE, not to Move's transport --------------
+#
+# The playhead used to be drawn whenever MOVE was playing (the SHM transport
+# flag) or a jog was held. Neither is the question. The module can be stopped
+# while Move runs on -- switch Run off and the sound stops while the transport
+# keeps going -- and the head went on sweeping over silence. Reported from a
+# device as "if I press stop in the web ux the playhead on the move still
+# continues -- the sound stopped though".
+grep -q 'if (!prog || !prog.running || !S.anchored) return null;' "$CANVAS" \
+  || note "canvas.js: the playhead is gated on something other than the module's own running flag"
+grep -q 'S.xport = playing;' "$CANVAS" \
+  || note "canvas.js: the live transport flag is gone -- the head needs it for the START EDGE"
+
 # --- the staff names its chords, and never names them WRONG ---------------
 #
 # Rendered into a framebuffer, because both rules are about pixels: a block too

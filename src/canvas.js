@@ -1158,9 +1158,29 @@ function pollTransport(nowMs) {
  * ticks and needs no such excuse.
  */
 function playheadUnits(prog, nowMs) {
-    /* The transport OR a held jog: the module runs the same sequence either
-     * way, so the head belongs on screen for both. */
-    if ((!S.xport && !S.holding) || !S.anchorMs) return null;
+    /*
+     * THE HEAD BELONGS TO THE MODULE, NOT TO MOVE'S TRANSPORT.
+     *
+     * This asked whether MOVE was playing (the SHM transport flag) or a jog
+     * was held -- neither of which is the question. The module can be stopped
+     * while Move runs on: switch Run off, from the panel or the knob, and the
+     * sound stops while Move's transport keeps going. The head went on
+     * sweeping over silence, which is the screen disagreeing with your ears.
+     * Reported exactly that way: "if I press stop in the web ux the playhead
+     * on the move still continues -- the sound stopped though".
+     *
+     * `prog.running` is the module's own answer -- the transport WITH Run on,
+     * a held chord, or a looping preview -- so it covers the two cases this
+     * used to test and the one it got wrong. It also fixes the mirror image:
+     * a preview loop with Move stopped now draws a head, where before there
+     * was music and nothing moving.
+     *
+     * It costs up to one poll of lag (250ms) at the edges, because it comes
+     * from `prog` rather than from SHM. The transport flag is still read every
+     * few frames for the START EDGE, where being live is what puts the head at
+     * position 0 on the downbeat rather than a fifth of a second into it.
+     */
+    if (!prog || !prog.running || !S.anchored) return null;
     const clip = Math.max(1, prog.clipUnits || 1);
     const unitsPerBeat = (prog.stepUnits || 8) / (prog.stepBeats || 4);
     const u = ((nowMs - S.anchorMs) / 1000) * (S.bpm / 60) * unitsPerBeat;
