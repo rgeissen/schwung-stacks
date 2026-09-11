@@ -1180,7 +1180,25 @@ function playheadUnits(prog, nowMs) {
      * few frames for the START EDGE, where being live is what puts the head at
      * position 0 on the downbeat rather than a fifth of a second into it.
      */
-    if (!prog || !prog.running || !S.anchored) return null;
+    if (!prog) return null;
+    /*
+     * STOPPED AND REWOUND, THE HEAD SITS AT THE TOP -- it does not vanish.
+     *
+     * A stop rewinds (see the transport handlers in the DSP), so a stopped
+     * module is AT the beginning and that is worth showing: it is where the
+     * next play will start from, and it is the same thing Move's own playhead
+     * does. Hiding it made a stop look like the picture had given up.
+     *
+     * Only when actually rewound, though. With Move's transport running and
+     * Run switched off, the position keeps advancing with the clocks while
+     * nothing sounds -- a head creeping over silence is the complaint this
+     * whole gate exists to answer, so there it stays hidden.
+     */
+    if (!prog.running) {
+        const clipU = Math.max(1, prog.clipUnits || 1);
+        return (prog.posUnits % clipU) === 0 ? 0 : null;
+    }
+    if (!S.anchored) return null;
     const clip = Math.max(1, prog.clipUnits || 1);
     const unitsPerBeat = (prog.stepUnits || 8) / (prog.stepBeats || 4);
     const u = ((nowMs - S.anchorMs) / 1000) * (S.bpm / 60) * unitsPerBeat;

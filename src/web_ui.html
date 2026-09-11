@@ -973,7 +973,15 @@ function reanchor(p){
   aMs = now; aU = p.posUnits; aSet = true;
 }
 function playhead(p, now){
-  if (!p || !p.running) return null;
+  if (!p) return null;
+  /* Stopped and rewound, the head sits at the top rather than vanishing --
+     it is where the next play starts, and it is what Move's own playhead
+     does. Still hidden when the position is creeping on with Move's clock
+     while Run is off, which is a head over silence. */
+  if (!p.running){
+    var c0 = Math.max(1, p.clipUnits || 1);
+    return (p.posUnits % c0) === 0 ? 0 : null;
+  }
   var u = aU + ((now - aMs)/1000) * unitsPerSec(p), c = Math.max(1, p.clipUnits);
   return ((u % c) + c) % c;
 }

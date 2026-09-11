@@ -2404,6 +2404,18 @@ static int stk_process_midi(void *instance, const uint8_t *in, int in_len,
         st->clock_running = 0;
         st->at_downbeat = 0;
         /*
+         * A STOP REWINDS, because Move's does.
+         *
+         * Move returns its playhead to the top on stop, and this did not --
+         * it only stopped counting. The two then disagreed about where the
+         * music was: the next Start happened to paper over it (a Start IS
+         * zero), but anything reading the position in between saw a module
+         * parked mid-phrase while Move sat at the beginning, and a panel
+         * asking the module where it is was told the wrong thing.
+         */
+        st->pulse = 0;
+        st->pulse_accum = 0.0;
+        /*
          * A stop CANCELS a pending lap, so it must also retract the word AND
          * PUT RUN BACK. Arming switches Run off so the module is silent until
          * the downbeat it is waiting for; cancel without restoring it and the
@@ -3342,6 +3354,19 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         static const char *const P[] = { "off", "chord", "loop" };
         int i = opt_index(val, P, 3);
         if (i >= 0) {
+            /*
+             * AND THE MODULE'S OWN STOP REWINDS TOO -- same rule, other
+             * transport. Leaving `loop` is the panel's Stop button when
+             * nothing else is driving, so it must land where Move's stop
+             * lands: at the top. Only when Move's clock is NOT running,
+             * because then the position is MOVE'S and zeroing it here would
+             * be this module arguing with the transport it is following.
+             */
+            if (st->preview == 2 && i != 2 && !st->clock_running) {
+                st->pulse = 0;
+                st->pulse_accum = 0.0;
+                st->cur_step = -1;
+            }
             /*
              * LEAVING `loop` MUST STOP LIKE A RELEASE DOES, not merely stop
              * scheduling. Assigning st->preview alone left whatever was armed

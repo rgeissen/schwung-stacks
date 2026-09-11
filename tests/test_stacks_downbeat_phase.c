@@ -100,6 +100,40 @@ int main(void) {
            at[1] == len1 * UNIT_CLOCKS ? "ok" : "FAIL: off the bar line");
     if (at[1] != len1 * UNIT_CLOCKS) bad = 1;
 
+    /*
+     * A STOP REWINDS, on both transports, because MOVE'S DOES.
+     *
+     * Move returns its playhead to the top on stop. This did not -- it only
+     * stopped counting -- so the two disagreed about where the music was the
+     * moment anything asked. Reported from a device as "stop on the web ux
+     * doesn't reset the playhead to zero ... as on the move stop resets the
+     * playhead to zero".
+     */
+    {
+        stk_t *t = (stk_t *)stk_create(NULL, NULL);
+        stk_set_param(t, "run", "on");
+        uint8_t go = 0xFA; stk_process_midi(t, &go, 1, out, lens, 64);
+        for (int c = 0; c < BAR_CLOCKS + 30; c++) {
+            uint8_t clk = 0xF8; stk_process_midi(t, &clk, 1, out, lens, 64);
+            stk_tick(t, 128, 44100, out, lens, 64);
+        }
+        int mid = t->pulse;
+        uint8_t stop = 0xFC; stk_process_midi(t, &stop, 1, out, lens, 64);
+        printf("  Move's stop: pulse %d -> %d                      %s\n", mid, t->pulse,
+               t->pulse == 0 ? "ok" : "FAIL: the module is parked where Move is not");
+        if (t->pulse != 0) bad = 1;
+
+        /* The module's own transport, with Move stopped: same rule. */
+        stk_set_param(t, "preview", "loop");
+        for (int f = 0; f < 400; f++) stk_tick(t, 128, 44100, out, lens, 64);
+        int prev = t->pulse;
+        stk_set_param(t, "preview", "off");
+        printf("  the panel's stop: pulse %d -> %d                 %s\n", prev, t->pulse,
+               t->pulse == 0 ? "ok" : "FAIL: stop did not return to the top");
+        if (t->pulse != 0 || prev == 0) bad = 1;
+        stk_destroy(t);
+    }
+
     stk_destroy(s);
     printf(bad ? "\nFAIL\n" : "\nPASS\n");
     return bad;
