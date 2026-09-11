@@ -1278,13 +1278,18 @@ var SPAN = { patterns:6,
 };
 /*
  * SIXTEEN PATTERN SLOTS -- the same sixteen the Move's PATTERNS pad page
- * shows, reading the same one value.
+ * shows, in the same shape, reading the same one value.
  *
- * A slot has three states and they are three colours, because you cannot find
- * out which by pressing: an empty one does nothing and a full one replaces
- * your buffer. Click recalls, HOLD stores (the deliberate gesture is the slow
- * one, so a fumbled recall cannot overwrite work), and the Delete toggle turns
- * the grid into a delete surface rather than hiding deletion behind a chord.
+ * YOU ARE ALWAYS IN A SLOT and everything runs against it, so a click SWITCHES
+ * (there is no load step and no save step -- what you wrote stays in the slot
+ * you wrote it in), a HOLD copies what you are playing into another slot and
+ * carries on there, and the DELETE toggle turns the grid into a delete surface
+ * rather than hiding deletion behind a modifier a mouse does not have.
+ *
+ * Three colours, because pressing cannot tell you which state a slot is in:
+ * dark is empty, blue holds music, gold is the one you are in -- and it lights
+ * as the first chord is written, since `used` for the active slot is read from
+ * the live buffer rather than from a save that never happens.
  *
  * It is a "key" on the CLIP bank without being a param: `patterns` is read-only
  * on the module, and the three verbs are separate write params.

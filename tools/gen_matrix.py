@@ -253,6 +253,42 @@ GESTURES = [
     ("Back", "leave the grid", "the only way out &mdash; the jog click is claimed for playing"),
     ("CHD knob (Main)", "add several chords at once", "growing the count copies the last chord; while the buffer is still empty it divides the clip between the slots instead"),
 ]
+# ------------------------------------------------------------------
+# THE PATTERN PAGE gets a block of its own, not a table row.
+#
+# It is sixteen BUTTONS with three states and three gestures, and a row of
+# prose describing that is a row nobody reads. The point of the page is its
+# SHAPE -- two rows of eight, exactly as they sit under a hand -- so the
+# documentation is that shape, in the colours the device actually lights.
+# ------------------------------------------------------------------
+PAT_FILLED = {2, 3, 6, 11}      # an illustrative spread, not live state
+PAT_CUR = 6
+pat_slots = "".join(
+    '<div class="pslot%s">%d</div>' % (
+        " pcur" if n == PAT_CUR else " pfull" if n in PAT_FILLED else "", n)
+    for n in range(1, 17))
+
+PAT_GESTURES = [
+    ("Tap", "go to that slot",
+     "full or empty &mdash; you are always IN one, and an empty slot is where the "
+     "next pattern gets written. Nothing is lost by leaving: what you wrote stays "
+     "in the slot you wrote it in, with no store step at all"),
+    ("Hold", "copy what you are playing into it",
+     "and carry on there &mdash; the one thing selecting alone cannot do. It is the "
+     "SLOW gesture on purpose: copying is deliberate and switching is hurried, so a "
+     "fumbled tap cannot overwrite work"),
+    ("Mute&thinsp;+&thinsp;tap", "clear that slot",
+     "and if it is the slot you are in, what you are playing empties with it &mdash; "
+     "they are the same thing"),
+    ("In the browser panel", "the same sixteen, the same shape",
+     "on the CLIP tab. Click switches, hold copies, and a DELETE toggle turns the "
+     "grid into a delete surface rather than hiding deletion behind a modifier a "
+     "mouse does not have"),
+]
+pat_rows = "".join(
+    '<tr><th scope="row">%s</th><td>%s</td><td class="note">%s</td></tr>' % g
+    for g in PAT_GESTURES)
+
 gest = "".join(
     f'<tr><th scope="row">{g}</th><td>{d}</td><td class="note">{n}</td></tr>'
     for g, d, n in GESTURES)
@@ -518,6 +554,23 @@ h2, h3 {{ text-wrap:balance; }}
 .knob--empty {{ background:repeating-linear-gradient(-45deg,
   transparent 0 6px, var(--line) 6px 7px); opacity:.5; }}
 
+/* The pattern page, drawn as the two rows of eight that it is. */
+.pgrid {{ display:grid; grid-template-columns:repeat(8,1fr); gap:6px; padding:18px 20px 4px; }}
+.pslot {{ aspect-ratio:1; border-radius:5px; display:flex; align-items:center;
+  justify-content:center; border:1px solid var(--line); background:var(--ground);
+  color:var(--muted); font:500 12px/1 "IBM Plex Mono", monospace; }}
+.pslot.pfull {{ background:#1E3A52; border-color:#2C5A7A; color:#BCD7E8; }}
+.pslot.pcur {{ background:var(--accent); border-color:var(--accent); color:#0B0E13; font-weight:700; }}
+.pkey {{ display:flex; flex-wrap:wrap; gap:16px; padding:12px 20px 16px;
+  font:400 12px/1.4 "IBM Plex Mono", monospace; color:var(--muted); }}
+.pkey span {{ display:inline-flex; align-items:center; gap:7px; }}
+.pk {{ width:12px; height:12px; border-radius:3px; border:1px solid var(--line);
+  background:var(--ground); display:inline-block; }}
+.pk--full {{ background:#1E3A52; border-color:#2C5A7A; }}
+.pk--cur {{ background:var(--accent); border-color:var(--accent); }}
+.pgest {{ border:0; border-top:1px solid var(--line); border-radius:0; box-shadow:none; }}
+@media (max-width:720px) {{ .pgrid {{ grid-template-columns:repeat(4,1fr); }} }}
+
 table {{ width:100%; border-collapse:collapse; background:var(--panel);
   border:1px solid var(--line); border-radius:3px; box-shadow:var(--shadow); }}
 th, td {{ text-align:left; padding:11px 16px; border-bottom:1px solid var(--line);
@@ -565,6 +618,22 @@ footer {{ margin-top:52px; padding-top:18px; border-top:1px solid var(--line);
 
   <p class="eyebrow">Banks</p>
   {"".join(sections)}
+
+  <p class="eyebrow">Patterns &mdash; the fourth pad page</p>
+  <section class="bank bank--chord">
+    <header class="bank__head">
+      <h2>PATTERNS</h2>
+      <p class="scope">sixteen <strong>buffers</strong>, and you are always in one</p>
+      <p class="page">pads, rows 2&ndash;3 &middot; <code>Up</code> past FEEL</p>
+    </header>
+    <div class="pgrid">{pat_slots}</div>
+    <div class="pkey">
+      <span><i class="pk pk--cur"></i>the slot you are in</span>
+      <span><i class="pk pk--full"></i>holds music</span>
+      <span><i class="pk"></i>empty</span>
+    </div>
+    <table class="pgest"><tbody>{pat_rows}</tbody></table>
+  </section>
 
   <p class="eyebrow">Not on a knob &mdash; gestures</p>
   <table><tbody>{gest}</tbody></table>
