@@ -1313,18 +1313,18 @@ function patternControl(){
       clearTimeout(t);
       if (patDel || held) return;
       /*
-       * A TAP ONLY EVER RECALLS, and an empty slot has nothing to recall.
+       * A TAP ACTIVATES, full or empty.
        *
-       * This used to store into an empty slot on a tap, on the theory that an
-       * empty slot has one obvious meaning. It does not: a brush against one
-       * then captured the buffer and lit it, so the slot you meant to leave
-       * empty was suddenly "a pattern" -- and the MOVE did nothing in the same
-       * situation, because the module ignores a recall of an unused slot. Two
-       * surfaces, two answers, for the same tap on the same slot.
+       * You are always IN a slot and everything runs against it, so an empty
+       * slot is not a hole to fall into -- it is where the next pattern gets
+       * written. Nothing is lost by leaving: the module writes the buffer
+       * through to the slot you are leaving before it reads the new one.
        *
-       * One gesture, one meaning, both surfaces: tap recalls, hold stores.
+       * Two earlier versions got this wrong in opposite directions -- one
+       * captured the buffer into an empty slot on a tap, the other refused the
+       * tap entirely -- and both made the panel disagree with the Move.
        */
-      if (filled) set("pat_recall", n);
+      set("pat_recall", n);
     };
     b.onpointerup = up;
     b.onpointercancel = function(){ clearTimeout(t); };
@@ -1334,7 +1334,7 @@ function patternControl(){
   var row = document.createElement("div"); row.className = "patrow";
   var hint = document.createElement("span");
   hint.className = "pathint";
-  hint.textContent = patDel ? "tap a slot to delete it" : "tap recall · hold store";
+  hint.textContent = patDel ? "tap a slot to clear it" : "tap to switch · hold to copy here";
   var del = document.createElement("button");
   del.className = "patdel" + (patDel ? " on" : "");
   del.textContent = patDel ? "CANCEL" : "DELETE";

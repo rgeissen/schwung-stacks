@@ -2309,7 +2309,7 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     st->stamp_mode = 0;
     st->held_pad = -1;
     st->held_mask = 0;
-    st->pat_cur = -1;
+    st->pat_cur = 0;   /* slot 1 is active, and empty */
     st->cur_step = -1;
     st->recv_ch = 1;
     for (int i = 0; i < STK_MAX_VOICES; i++) st->voice[i].note = -1;
@@ -2873,49 +2873,101 @@ static void transpose_prog(stk_t *st, int semis, int unit) {
  * Comparing the result against the newest stored state is O(one memcmp of
  * under a kilobyte) and cannot be forgotten by a future edit path.
  */
+static int buffer_is_empty(const stk_prog_t *p);
+static void seed_default(stk_prog_t *p);
+static int default_len(const stk_prog_t *p);
+static int default_root(const stk_t *st);
+
 /*
- * STORE / RECALL / DELETE, and the one rule that matters between them:
- * RECALL BRINGS THE CLIP LENGTH WITH IT.
+ * YOU ARE ALWAYS IN A SLOT, and everything runs against the one you are in.
  *
- * A pattern is the progression AND the bars it was written against. Recalling
- * a twelve-bar phrase into a four-bar clip would leave two thirds of it
- * outside -- playing, drawn, and absent from anything Stamp writes -- which is
- * the silent truncation `grow_bars_to_fit` exists to prevent everywhere else.
+ * This is pattern SELECT, not save and load. Slot 1 is active and empty when
+ * the module starts; every edit belongs to the active slot; activating
+ * another slot READS it and you carry on there. Nothing is ever "stored" as a
+ * separate act, because there is nowhere else for an edit to go.
  *
- * `pat_cur` is what the lit button means: not "the last one you pressed" but
- * "the one this buffer came from". Storing sets it, recalling sets it, and
- * deleting the current one clears it -- because a lit button pointing at an
- * empty slot is a lie the eye cannot check.
+ * That is worth stating because the first version of this was the other
+ * model -- a working buffer plus sixteen snapshots you saved into -- and it
+ * produced two complaints that are really the same one: tapping an empty slot
+ * either captured the buffer into it (so a slot you meant to leave empty
+ * became a pattern) or did nothing at all (so the slot could not be reached).
+ * Neither is what a pattern button does anywhere else.
+ *
+ * `used` therefore means HAS MUSIC IN IT, and for the active slot it is
+ * computed from the live buffer rather than stored -- so the button lights the
+ * moment you write a chord into it, and goes dark again if you clear it.
  */
-static void pattern_store(stk_t *st, int i) {
+static void buffer_empty_keeping_harmony(stk_t *st) {
+    /* ONE definition of "empty", the same one Clear and boot use. */
+    int key = st->prog.key, scale = st->prog.scale, rate = st->prog.rate;
+    seed_default(&st->prog);
+    st->prog.key = key;
+    st->prog.scale = scale;
+    st->prog.rate = rate;
+    {
+        int l = default_len(&st->prog);
+        for (int k = 0; k < st->prog.count; k++) st->prog.ch[k].len = l;
+    }
+    st->prog.ch[0].root = default_root(st);
+    st->bars_manual = 0;
+    st->bars = 4;
+}
+
+/* The buffer IS the active slot's content; this is where they are made one. */
+static void pattern_sync_active(stk_t *st) {
+    int i = st->pat_cur;
     if (i < 0 || i >= STK_PATTERNS) return;
-    st->pat[i].used     = 1;
     st->pat[i].prog     = st->prog;
     st->pat[i].bars     = st->bars;
     st->pat[i].grouping = st->grouping;
-    st->pat_cur = i;
+    st->pat[i].used     = !buffer_is_empty(&st->prog);
 }
 
-static void pattern_recall(stk_t *st, int i) {
-    if (i < 0 || i >= STK_PATTERNS || !st->pat[i].used) return;
-    st->prog     = st->pat[i].prog;
-    st->bars     = st->pat[i].bars > 0 ? clampi(st->pat[i].bars, 1, 16) : st->bars;
-    st->bars_manual = 1;     /* the length came WITH the pattern; do not refit */
-    st->grouping = clampi(st->pat[i].grouping, 0, NUM_GROUPINGS - 1);
+static void pattern_activate(stk_t *st, int i) {
+    if (i < 0 || i >= STK_PATTERNS || i == st->pat_cur) return;
+    pattern_sync_active(st);        /* what you wrote stays where you wrote it */
+    st->pat_cur = i;
+    if (st->pat[i].used) {
+        st->prog        = st->pat[i].prog;
+        st->bars        = clampi(st->pat[i].bars, 1, 16);
+        st->bars_manual = 1;        /* the length came WITH the pattern */
+        st->grouping    = clampi(st->pat[i].grouping, 0, NUM_GROUPINGS - 1);
+    } else {
+        buffer_empty_keeping_harmony(st);
+    }
     if (st->prog.count < 1) st->prog.count = 1;
     st->sel = clampi(st->sel, 1, st->prog.count);
-    st->pat_cur = i;
-    /* Stop what the previous buffer had scheduled -- the same three lines a
-     * release uses, since the chords under the playhead have just changed. */
+    /* The chords under the playhead have just changed: stop what was armed,
+     * exactly as a release does. */
     st->armed_id = 0;
     st->pend_n = 0;
     st->cut_pending = 1;
 }
 
+/* The long press: put a COPY of what you are playing into another slot and
+ * carry on there -- "save as", the one thing select alone cannot do. */
+static void pattern_copy_to(stk_t *st, int i) {
+    if (i < 0 || i >= STK_PATTERNS) return;
+    pattern_sync_active(st);
+    if (i == st->pat_cur) return;
+    st->pat[i] = st->pat[st->pat_cur];
+    st->pat_cur = i;
+}
+
 static void pattern_delete(stk_t *st, int i) {
     if (i < 0 || i >= STK_PATTERNS) return;
     st->pat[i].used = 0;
-    if (st->pat_cur == i) st->pat_cur = -1;
+    memset(&st->pat[i].prog, 0, sizeof st->pat[i].prog);
+    /* Clearing the slot you are IN empties what you are playing, because they
+     * are the same thing -- anything else would leave the lamp dark over a
+     * buffer full of music. */
+    if (i == st->pat_cur) {
+        buffer_empty_keeping_harmony(st);
+        st->sel = 1;
+        st->armed_id = 0;
+        st->pend_n = 0;
+        st->cut_pending = 1;
+    }
 }
 
 static void undo_capture(stk_t *st) {
@@ -3788,9 +3840,9 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
             }
         }
     } else if (strcmp(key, "pat_store") == 0) {
-        pattern_store(st, atoi(val) - 1);      /* 1-based on the wire, like sel */
+        pattern_copy_to(st, atoi(val) - 1);    /* 1-based on the wire, like sel */
     } else if (strcmp(key, "pat_recall") == 0) {
-        pattern_recall(st, atoi(val) - 1);
+        pattern_activate(st, atoi(val) - 1);
     } else if (strcmp(key, "pat_delete") == 0) {
         pattern_delete(st, atoi(val) - 1);
     } else if (strcmp(key, "clear") == 0) {
@@ -3926,7 +3978,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
          * serialiser is written against.
          */
         for (int i = 0; i < STK_PATTERNS; i++) st->pat[i].used = 0;
-        st->pat_cur = -1;
+        st->pat_cur = 0;      /* you are always IN a slot; slot 1 by default */
         for (const char *g = strchr(p, '@'); g; g = strchr(g + 1, '@')) {
             int slot, pk, ps, pr, pb, pg, pc;
             if (sscanf(g + 1, "%d.%d.%d.%d.%d.%d.%d:", &slot, &pk, &ps, &pr,
@@ -3975,8 +4027,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
             int cur = atoi(cm + 1) - 1;
             /* Only if it points at a slot that actually holds something: a
              * lamp on an empty button is the one thing the eye cannot check. */
-            if (cur >= 0 && cur < STK_PATTERNS && st->pat[cur].used)
-                st->pat_cur = cur;
+            if (cur >= 0 && cur < STK_PATTERNS) st->pat_cur = cur;
         }
     }
 }
@@ -4269,11 +4320,18 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
          * "pattern 3", and an off-by-one between two UIs and a DSP is a bug
          * nobody can see until it is on hardware.
          */
+        const stk_t *k = (const stk_t *)st;
         unsigned mask = 0;
-        for (int i = 0; i < STK_PATTERNS; i++)
-            if (((const stk_t *)st)->pat[i].used) mask |= 1u << i;
-        return snprintf(buf, buf_len, "%04x|%d", mask,
-                        ((const stk_t *)st)->pat_cur + 1);
+        for (int i = 0; i < STK_PATTERNS; i++) {
+            /* The ACTIVE slot is whatever the buffer currently holds -- so the
+             * button lights as soon as you write a chord into an empty slot,
+             * and goes dark again if you clear it. Anything else would need an
+             * explicit "store" to tell the truth. */
+            int used = (i == k->pat_cur) ? !buffer_is_empty(&k->prog)
+                                         : k->pat[i].used;
+            if (used) mask |= 1u << i;
+        }
+        return snprintf(buf, buf_len, "%04x|%d", mask, k->pat_cur + 1);
     }
     if (strcmp(key, "status") == 0) {
         /*
@@ -4334,6 +4392,10 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
          * the chord separator, and a pattern containing one would send the
          * chord walk off into the pattern list.
          */
+        /* The buffer is the active slot's content, so it has to be written
+         * through before the slots are serialised -- otherwise a set reloads
+         * with the pattern as it was when you last switched away from it. */
+        pattern_sync_active((stk_t *)st);
         for (int i = 0; i < STK_PATTERNS && at < buf_len - 64; i++) {
             if (!st->pat[i].used) continue;
             const stk_prog_t *g = &st->pat[i].prog;

@@ -1,24 +1,31 @@
 /*
- * SIXTEEN STORED BUFFERS, and what has to be true of them.
+ * YOU ARE ALWAYS IN A SLOT, and everything runs against the one you are in.
  *
- * A pattern is the BUFFER -- the progression, the clip length it was written
- * against, and the voice grouping it was voiced with -- and emphatically not a
- * clip: nothing here touches Song.abl, so storing costs nothing and Move
- * cannot overwrite it.
+ * This is pattern SELECT, not save and load. Slot 1 is active and empty at
+ * start; every edit belongs to the active slot; activating another slot READS
+ * it and you carry on there. A pattern is the BUFFER -- progression, clip
+ * length, voice grouping -- and never a clip: nothing here touches Song.abl.
  *
- * The rules that are easy to get wrong, and each one is here because getting
- * it wrong is invisible until somebody loses work:
+ * It was built the other way first, and the two complaints that produced were
+ * really one: tapping an empty slot either captured the buffer into it (so a
+ * slot you meant to leave empty became a pattern) or did nothing at all (so
+ * the slot could not be reached). Neither is what a pattern button does.
  *
- *   * RECALL BRINGS THE CLIP LENGTH WITH IT. A twelve-bar phrase recalled into
- *     a four-bar clip leaves two thirds of itself outside -- playing, drawn,
- *     and absent from anything Stamp writes.
- *   * `pat_cur` means "where this buffer CAME FROM", not "the last button you
- *     pressed", so deleting the current slot must clear it: a lit button
- *     pointing at an empty slot is a lie the eye cannot check.
- *   * THE PATTERNS SURVIVE, because they ride in the state blob -- and a blob
- *     written before patterns existed must still load.
- *   * Storing is not an edit, so it must not consume the undo stack; recalling
- *     IS one, so it must be undoable.
+ * The rules, each here because getting it wrong is invisible until somebody
+ * loses work:
+ *
+ *   * SWITCHING AWAY KEEPS WHAT YOU WROTE. There is no store step, so if the
+ *     switch does not write through, the edit is simply gone.
+ *   * AN EMPTY SLOT IS AN EMPTY BUFFER -- activating one gives you somewhere
+ *     to write, in the key and scale you were working in.
+ *   * `used` MEANS HAS MUSIC IN IT, and for the active slot it is read from
+ *     the live buffer, so the lamp lights as you write the first chord.
+ *   * ACTIVATING BRINGS THE CLIP LENGTH WITH IT. A twelve-bar phrase read into
+ *     a four-bar clip otherwise leaves two thirds of itself outside.
+ *   * DELETING THE SLOT YOU ARE IN empties what you are playing, because they
+ *     are the same thing.
+ *   * THE PATTERNS SURVIVE, in the state blob -- and a blob written before
+ *     patterns existed must still load.
  */
 #include <stdio.h>
 #include <string.h>
@@ -48,87 +55,85 @@ int main(void) {
     move_midi_fx_init(&h);
     char buf[131072];
 
-    stk_t *s = fresh();
+    /* --- you start IN slot 1, and it is empty --- */
+    stk_t *s = (stk_t *)stk_create(NULL, NULL);
+    stk_get_param(s, "patterns", buf, sizeof buf);
+    check(strcmp(buf, "0000|1") == 0, "at start: slot 1 active, nothing stored");
+
+    /* Writing a chord lights the slot you are in, with no store step. */
     progression(s, "I", "IV", "V", "VI");
-    int root_a = s->prog.ch[1].root;
     stk_set_param(s, "bars", "8");
-    stk_set_param(s, "pat_store", "3");
-
     stk_get_param(s, "patterns", buf, sizeof buf);
-    check(strcmp(buf, "0004|3") == 0, "store 3: mask says slot 3, current is 3");
+    check(strcmp(buf, "0001|1") == 0, "writing into slot 1 lights slot 1");
+    int root_1 = s->prog.ch[1].root;
 
-    /* Change the buffer, then bring the pattern back. */
+    /* --- activating an empty slot gives you somewhere to write --- */
+    stk_set_param(s, "pat_recall", "4");
+    stk_get_param(s, "patterns", buf, sizeof buf);
+    check(strcmp(buf, "0001|4") == 0, "slot 4 is active, and still empty");
+    check(buffer_is_empty(&s->prog), "...and the buffer is empty, ready to write");
+    check(s->bars == 4, "...with the clip back to its default length");
+
+    /* What slot 1 held is still there, untouched. */
+    check(s->pat[0].used && s->pat[0].prog.ch[1].root == root_1,
+          "switching away KEPT what was written in slot 1");
+
+    /* Write something different here. */
     progression(s, "II", "II", "II", "II");
-    stk_set_param(s, "bars", "2");
-    check(s->prog.ch[1].root != root_a, "the buffer really changed");
-    stk_set_param(s, "pat_recall", "3");
-    check(s->prog.ch[1].root == root_a, "recall 3: the progression came back");
-    check(s->bars == 8, "recall 3: and so did its clip length (8 bars)");
+    int root_4 = s->prog.ch[1].root;
+    stk_get_param(s, "patterns", buf, sizeof buf);
+    check(strcmp(buf, "0009|4") == 0, "now both 1 and 4 hold music");
 
-    /* An empty slot is not a hole to fall into. */
-    int before = s->prog.ch[1].root;
-    stk_set_param(s, "pat_recall", "9");
-    check(s->prog.ch[1].root == before, "recalling an EMPTY slot changes nothing");
+    /* --- and back again, reading what is there --- */
+    stk_set_param(s, "pat_recall", "1");
+    check(s->prog.ch[1].root == root_1, "activating 1 reads slot 1 back");
+    check(s->bars == 8, "...including the clip length it was written against");
+    stk_set_param(s, "pat_recall", "4");
+    check(s->prog.ch[1].root == root_4, "activating 4 reads slot 4 back");
 
-    /* Sixteen of them, and the sixteenth is reachable. */
-    stk_set_param(s, "pat_store", "16");
+    /* --- the long press copies what you are playing somewhere else --- */
+    stk_set_param(s, "pat_store", "9");
     stk_get_param(s, "patterns", buf, sizeof buf);
-    check(strcmp(buf, "8004|16") == 0, "slot 16 exists and is the current one");
-    stk_set_param(s, "pat_store", "17");
-    stk_get_param(s, "patterns", buf, sizeof buf);
-    check(strcmp(buf, "8004|16") == 0, "slot 17 is refused, not wrapped onto slot 1");
+    check(strcmp(buf, "0109|9") == 0, "copy to 9: it holds music and you are in it");
+    check(s->prog.ch[1].root == root_4, "...and you are still playing what you copied");
 
-    /* Delete clears the lamp only when it was pointing at the deleted slot. */
-    stk_set_param(s, "pat_delete", "3");
+    /* --- deleting --- */
+    stk_set_param(s, "pat_delete", "1");
     stk_get_param(s, "patterns", buf, sizeof buf);
-    check(strcmp(buf, "8000|16") == 0, "delete 3: gone, and 16 is still current");
-    stk_set_param(s, "pat_delete", "16");
+    check(strcmp(buf, "0108|9") == 0, "delete 1: gone, and you are still in 9");
+    stk_set_param(s, "pat_delete", "9");
     stk_get_param(s, "patterns", buf, sizeof buf);
-    check(strcmp(buf, "0000|0") == 0, "deleting the CURRENT slot clears the lamp");
+    check(strcmp(buf, "0008|9") == 0, "deleting the slot you are IN leaves you there, empty");
+    check(buffer_is_empty(&s->prog), "...and empties what you were playing");
 
     /* --- the round trip, which is what makes them survive a reload --- */
-    stk_t *t = fresh();
+    stk_t *t = (stk_t *)stk_create(NULL, NULL);
     progression(t, "I", "V", "VI", "IV");
     stk_set_param(t, "bars", "8");
-    stk_set_param(t, "pat_store", "1");
+    stk_set_param(t, "pat_recall", "5");
     progression(t, "II", "III", "II", "III");
-    stk_set_param(t, "bars", "4");
-    stk_set_param(t, "pat_store", "5");
-    int a_root = t->pat[0].prog.ch[2].root, b_root = t->pat[4].prog.ch[1].root;
+    int a_root = t->pat[0].prog.ch[2].root, b_root = t->prog.ch[1].root;
     stk_get_param(t, "state", buf, sizeof buf);
 
-    stk_t *u = fresh();
+    stk_t *u = (stk_t *)stk_create(NULL, NULL);
     stk_set_param(u, "state", buf);
     stk_get_param(u, "patterns", buf, sizeof buf);
-    check(strcmp(buf, "0011|5") == 0, "restored: slots 1 and 5 filled, 5 current");
-    check(u->pat[0].prog.ch[2].root == a_root
-       && u->pat[4].prog.ch[1].root == b_root, "restored: both progressions intact");
-    check(u->pat[0].bars == 8 && u->pat[4].bars == 4, "restored: each kept its own clip length");
+    check(strcmp(buf, "0011|5") == 0, "restored: 1 and 5 hold music, 5 is active");
+    check(u->prog.ch[1].root == b_root, "restored: the ACTIVE slot is what you are playing");
+    check(u->pat[0].prog.ch[2].root == a_root, "restored: the other slot kept its own music");
+    check(u->pat[0].bars == 8, "restored: and its own clip length");
 
     /* A blob from before patterns existed must still load. */
-    stk_t *v = fresh();
+    stk_t *v = (stk_t *)stk_create(NULL, NULL);
     char old[4096];
     snprintf(old, sizeof old, "{\"s\":\"v6|9|2|1|4|4|0|100|90|0|0|0|1|1|0|0|0|0|1|0|0|0|0|1|2|"
                               "57.14.0.8.0.0.0.0.0.0.0.0.0;59.14.0.8.0.0.0.0.0.0.0.0.0\"}");
     stk_set_param(v, "state", old);
     stk_get_param(v, "patterns", buf, sizeof buf);
-    check(strcmp(buf, "0000|0") == 0, "a pattern-less blob still loads, with no patterns");
+    check(strcmp(buf, "0001|1") == 0, "an old blob loads into slot 1, which now holds it");
     check(v->prog.count == 2, "and its progression is intact");
 
-    /* Storing is not an edit; recalling is. */
-    stk_t *w = fresh();
-    progression(w, "I", "IV", "V", "VI");
-    stk_set_param(w, "pat_store", "2");
-    int depth_after_store = w->hist_depth;
-    stk_set_param(w, "pat_store", "4");
-    check(w->hist_depth == depth_after_store, "storing again consumes no undo");
-    int r0 = w->prog.ch[0].root;
-    progression(w, "II", "II", "II", "II");
-    stk_set_param(w, "pat_recall", "2");
-    stk_set_param(w, "undo", "on");
-    check(w->prog.ch[0].root != r0 || w->prog.count > 0, "an accidental recall is undoable");
-
-    stk_destroy(s); stk_destroy(t); stk_destroy(u); stk_destroy(v); stk_destroy(w);
+    stk_destroy(s); stk_destroy(t); stk_destroy(u); stk_destroy(v);
     printf(bad ? "\nFAIL\n" : "\nPASS\n");
     return bad;
 }

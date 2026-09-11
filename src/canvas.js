@@ -1858,14 +1858,16 @@ globalThis.canvas_overlay = {
                         if (held >= LONG_PRESS_MS) {
                             ctx.setParam("pat_store", String(n));
                             say(ctx, "PATTERN " + n + " STORED");
-                        } else if ((S.pats >> (n - 1)) & 1) {
-                            ctx.setParam("pat_recall", String(n));
-                            say(ctx, "PATTERN " + n);
-                            refreshBank(ctx);
                         } else {
-                            /* Nothing to recall. Say what WOULD fill it rather
-                             * than leaving a press that looks ignored. */
-                            say(ctx, "PATTERN " + n + " EMPTY - HOLD TO STORE");
+                            /* A TAP ACTIVATES, full or empty: you are always
+                             * IN a slot, and an empty one is where you write
+                             * the next pattern. Nothing is lost by leaving --
+                             * the module writes the buffer through to the slot
+                             * you are leaving. */
+                            const had = (S.pats >> (n - 1)) & 1;
+                            ctx.setParam("pat_recall", String(n));
+                            say(ctx, "PATTERN " + n + (had ? "" : " - EMPTY"));
+                            refreshBank(ctx);
                         }
                         refresh(ctx);
                     }

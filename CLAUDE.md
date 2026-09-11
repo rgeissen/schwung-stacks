@@ -98,20 +98,23 @@ gets wrong:
   back and returns when that take's transport stops. Pressing the same control
   while armed CANCELS, because a state whose only exit was Move's stop button
   is a state the surface that entered it could not leave.
-- **A PATTERN IS THE BUFFER, NOT A CLIP.** Sixteen slots holding the
-  progression, the clip LENGTH it was written against and the voice grouping
-  it was voiced with -- nothing touches Song.abl, so storing is free and Move
-  cannot overwrite it. Three rules the obvious version gets wrong: recall
-  brings the BARS with it (a twelve-bar phrase recalled into a four-bar clip
-  otherwise leaves two thirds of itself outside, playing and drawn and absent
-  from any stamp); `pat_cur` means "where this buffer CAME FROM", so deleting
-  the current slot clears it, because a lit button over an empty slot is a lie
-  the eye cannot check; and store/delete capture NO undo while recall does --
-  an undo stack filling with "you pressed store" pushes the edit you wanted to
-  undo off the end of it. They ride in the `state` blob behind an `@` marker so
-  a blob written before patterns existed still loads, and `patterns` is one
-  read -- a mask and the current slot -- that draws all sixteen buttons on both
-  surfaces. `tests/test_stacks_patterns.sh`.
+- **YOU ARE ALWAYS IN A SLOT.** Sixteen patterns, and this is pattern SELECT,
+  not save/load: slot 1 is active and empty at start, every edit belongs to the
+  active slot, and activating another READS it. There is no store step, so the
+  switch is what must write the buffer through -- miss that and the edit is
+  simply gone. Built the other way round first (a working buffer plus sixteen
+  snapshots), which produced two complaints that were the same one: tapping an
+  empty slot either captured the buffer into it or did nothing at all, and
+  neither is what a pattern button does anywhere else. `used` means HAS MUSIC
+  IN IT and for the ACTIVE slot is computed from the live buffer, so the lamp
+  lights as the first chord is written rather than waiting for a save. A slot
+  carries its CLIP LENGTH (a twelve-bar phrase read into a four-bar clip
+  otherwise loses two thirds of itself), deleting the slot you are in empties
+  what you are playing because they are the same thing, and the long press
+  COPIES what you are playing into another slot -- the one thing select alone
+  cannot do. They ride in the `state` blob behind an `@` marker so a blob
+  written before patterns existed still loads.
+  `tests/test_stacks_patterns.sh` is the spec.
 - **THE MODULE MUST NOT BE DRIVEN BY ITS OWN OUTPUT.** An incoming note is a
   chord SELECTOR by pitch class -- that is the feature, so a pad, a keyboard
   and a clip can all drive it. But its output goes to the track and the track
