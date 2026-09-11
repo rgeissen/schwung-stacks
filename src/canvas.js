@@ -460,7 +460,7 @@ function tinyPrint(ctx, x, y, text) {
  * on the control. Labels are capped at four characters by design.
  * ===================================================================== */
 /* ---- BEGIN GENERATED ranges (tools/gen_chain_params.py) ---- */
-const PARAM_RANGES = {"sel":[1,16],"root":["C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"],"degree":["I","II","III","IV","V","VI","VII","rest"],"coct":[1,5],"family":["5th","triad","6th","7th","9th","ext"],"shape":["rest","note","5","oct","maj","min","dim","aug","sus2","sus4","6","m6","69","maj7","min7","dom7","m7b5","dim7","mMaj7","7sus4","7sus2","aug7","maj7#5","7b5","add9","madd9","maj9","min9","9","7b9","7#9","m9b5","11","m11","maj11","13","maj13","m13"],"inv":[-3,3],"len":[1,64],"off":[0,15],"ccolour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"cstrum":[0,100],"cvel":[-63,63],"cgate":[-50,50],"cmute":["off","on"],"rhythm":["hold","half","quarter","eighth","16th","offbeat","dotted","push","tresillo","son 3-2","son 2-3","rumba","bossa","baiao","montuno","charl","charl 2","shuffle","comp","gallop","drive","anthem","garage","broken"],"ctrans":[-12,12],"genre":["none","Pop","Rock","Metal","Jazz","Blues","Soul","Gospel","Funk","R&B","Bossa","Latin","House","Reggae","Country","Cinematic"],"progression":["none","Axis","Sad Axis","Doo-wop","Pachelbel","Royal Road","Emotional","I-IV-V","Mixolydian","Grunge","Anthem","Thrash","Power Metal","Doom","Phrygian","ii-V-I","Minor ii-V","Rhythm A","Turnaround","Coltrane","Tritone","Bird Blues","Modal","12-bar","Quick IV","Minor blues","8-bar","Neo-soul","Montuno","iii-vi-ii-V","Slow jam","Plagal","Shouting","Walk-up","Amen","JB vamp","Funk turn","P-Funk","Clav","Two-chord","Minor lift","Quiet storm","Ipanema","Wave","Desafinado","Corcovado","Guajira","Bolero","Salsa","Deep vamp","Two-bar","Filter","Garage","Skank","Roots minor","Rockers","Boot scoot","Train","Andalusian","Aeolian","Dorian","Picardy","Ostinato","Lament"],"common":["none","I-V-vi-IV","vi-IV-I-V","I-vi-IV-V","I-IV-V","I-IV-I-V","ii-V-I","I-V-IV","I-iii-IV-V","vi-V-IV-V","i-VI-III-VII","i-iv-v","i-VII-VI-VII"],"uncommon":["none","I-bIII-IV-iv","Phrygian","Lydian II","Backdoor","bVI-bVII-I","i-v-bVI-bVII","Chrom desc","Borrowed IV","Secondary V","i-bVI-iv-V","Double plagal","Aug lift","Tritone col"],"colour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"grouping":["none","dynamic","dyn +1oct","dyn +2oct","C1-B2","C2-B3","C3-B4","open 1","open 2","open 3","guitar","drop 2","drop 3","drop 4","drop 2+3","drop 2+4"],"scale":["Chromatic","Major","Minor","Dorian","Phrygian","Lydian","Mixolydian","Locrian","HarmMinor","MelMinor","PentMaj","PentMin","Blues"],"key":["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"],"steps":[1,16],"rate":["2 bar","1 bar","1/2","1/4"],"run":["off","on"],"octave":[-2,2],"velocity":[1,127],"gate":[5,100],"hum_vel":[0,100],"roll_vel":["off","on"],"hum_time":[0,100],"roll_time":["off","on"],"swing":[0,75],"lanes":["scale","diatonic"],"preview":["off","chord","loop"],"read":["off","on"],"read_mode":["replace","append"],"defoct":[1,5],"bars":[1,16],"stamp":["off","on"],"stamp_mode":["rec arm","write file"],"clear":["off","on"],"play":["off","on"],"duplicate":["off","on"],"stretch":["off","on"],"compress":["off","on"],"undo":["off","on"],"redo":["off","on"],"insert":["off","on"],"remove":["off","on"]};
+const PARAM_RANGES = {"sel":[1,16],"root":["C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"],"degree":["I","II","III","IV","V","VI","VII","rest"],"coct":[1,5],"family":["5th","triad","6th","7th","9th","ext"],"shape":["rest","note","5","oct","maj","min","dim","aug","sus2","sus4","6","m6","69","maj7","min7","dom7","m7b5","dim7","mMaj7","7sus4","7sus2","aug7","maj7#5","7b5","add9","madd9","maj9","min9","9","7b9","7#9","m9b5","11","m11","maj11","13","maj13","m13"],"inv":[-3,3],"len":[1,64],"off":[0,15],"ccolour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"cstrum":[0,100],"cvel":[-63,63],"cgate":[-50,50],"cmute":["off","on"],"rhythm":["hold","half","quarter","eighth","16th","offbeat","dotted","push","tresillo","son 3-2","son 2-3","rumba","bossa","baiao","montuno","charl","charl 2","shuffle","comp","gallop","drive","anthem","garage","broken"],"ctrans":[-12,12],"genre":["none","Pop","Rock","Metal","Jazz","Blues","Soul","Gospel","Funk","R&B","Bossa","Latin","House","Reggae","Country","Cinematic"],"progression":["none","Axis","Sad Axis","Doo-wop","Pachelbel","Royal Road","Emotional","I-IV-V","Mixolydian","Grunge","Anthem","Thrash","Power Metal","Doom","Phrygian","ii-V-I","Minor ii-V","Rhythm A","Turnaround","Coltrane","Tritone","Bird Blues","Modal","12-bar","Quick IV","Minor blues","8-bar","Neo-soul","Montuno","iii-vi-ii-V","Slow jam","Plagal","Shouting","Walk-up","Amen","JB vamp","Funk turn","P-Funk","Clav","Two-chord","Minor lift","Quiet storm","Ipanema","Wave","Desafinado","Corcovado","Guajira","Bolero","Salsa","Deep vamp","Two-bar","Filter","Garage","Skank","Roots minor","Rockers","Boot scoot","Train","Andalusian","Aeolian","Dorian","Picardy","Ostinato","Lament"],"common":["none","I-V-vi-IV","vi-IV-I-V","I-vi-IV-V","I-IV-V","I-IV-I-V","ii-V-I","I-V-IV","I-iii-IV-V","vi-V-IV-V","i-VI-III-VII","i-iv-v","i-VII-VI-VII"],"uncommon":["none","I-bIII-IV-iv","Phrygian","Lydian II","Backdoor","bVI-bVII-I","i-v-bVI-bVII","Chrom desc","Borrowed IV","Secondary V","i-bVI-iv-V","Double plagal","Aug lift","Tritone col"],"colour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"grouping":["none","dynamic","dyn +1oct","dyn +2oct","C1-B2","C2-B3","C3-B4","open 1","open 2","open 3","guitar","drop 2","drop 3","drop 4","drop 2+3","drop 2+4"],"scale":["Chromatic","Major","Minor","Dorian","Phrygian","Lydian","Mixolydian","Locrian","HarmMinor","MelMinor","PentMaj","PentMin","Blues"],"key":["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"],"steps":[1,16],"rate":["2 bar","1 bar","1/2","1/4"],"run":["off","on"],"octave":[-2,2],"velocity":[1,127],"gate":[5,100],"hum_vel":[0,100],"roll_vel":["off","on"],"hum_time":[0,100],"roll_time":["off","on"],"swing":[0,75],"lanes":["scale","diatonic"],"preview":["off","chord","loop"],"read":["off","on"],"read_mode":["replace","append"],"defoct":[1,5],"bars":[1,16],"stamp":["off","on"],"stamp_mode":["rec arm","write file"],"clear":["off","on"],"pat_store":[1,16],"pat_recall":[1,16],"pat_delete":[1,16],"play":["off","on"],"duplicate":["off","on"],"stretch":["off","on"],"compress":["off","on"],"undo":["off","on"],"redo":["off","on"],"insert":["off","on"],"remove":["off","on"]};
 /* ---- END GENERATED ranges ---- */
 
 const BANKS = [
@@ -592,6 +592,17 @@ const PAD_PAGES = [
         { key: "cgate",  label: "GATE", opts: ["-50","-30","-15","0","15","30","40","50"] },
         { key: "cstrum", label: "STRUM", opts: ["0","10","20","35","50","65","80","100"] },
     ]},
+
+    /*
+     * PATTERNS IS NOT A ROW OF VALUES, and it is the only page that is not.
+     *
+     * The other three write one parameter of the selected chord per pad. This
+     * one is sixteen SLOTS across rows 2 and 3 -- the whole buffer in, the
+     * whole buffer out -- so it declares `patterns: true` and the pad handler
+     * branches on that rather than reading `rows`. The chord row below it is
+     * untouched, as it is on every page.
+     */
+    { name: "PATTERNS", patterns: true, rows: [] },
 ];
 
 /* Row 2 is notes 76-83, row 3 84-91, row 4 92-99 -- upward from the chords. */
@@ -609,6 +620,14 @@ const PAD_SELECTED = 3;     /* the one the banks are editing */
 const PAD_WRITTEN  = 69;    /* a chord you have written */
 const PAD_REST     = 70;    /* an empty slot inside the progression */
 const PAD_OFF      = 0;     /* past the end -- nothing there */
+/*
+ * THREE STATES FOR A PATTERN SLOT, and the third is the one that was asked
+ * for: you cannot tell an empty slot from a full one by pressing it, because
+ * pressing an empty one does nothing and pressing a full one replaces your
+ * buffer. So filled and current are different colours, and empty is dark.
+ */
+const PAD_PAT_FULL = 41;    /* holds a pattern */
+const PAD_PAT_CUR  = 122;   /* ...and it is the one loaded now */
 
 /*
  * ONE HUE PER PARAMETER ROW, AND THE CHORD ROW KEEPS ITS OWN.
@@ -753,6 +772,30 @@ function degreeCount() {
     return n || 7;
 }
 
+/*
+ * The pattern slots, lit in the three states above. Diffed through the same
+ * lastParamPad cache the value rows use, so a still page costs no MIDI.
+ */
+function updatePatternPadLeds() {
+    if (typeof move_midi_internal_send !== "function") return;
+    for (let r = 0; r < 2; r++) {
+        for (let col = 0; col < PAD_ROW_LEN; col++) {
+            const n = r * PAD_ROW_LEN + col + 1;
+            const filled = (S.pats >> (n - 1)) & 1;
+            const c = !filled ? PAD_OFF : (n === S.patCur ? PAD_PAT_CUR : PAD_PAT_FULL);
+            if (lastParamPad[r][col] === c) continue;
+            lastParamPad[r][col] = c;
+            move_midi_internal_send([0x09, 0x90, PAD_ROW_BASE[r + 1] + col, c]);
+        }
+    }
+    /* The third row belongs to no pattern; leave it dark rather than stale. */
+    for (let col = 0; col < PAD_ROW_LEN; col++) {
+        if (lastParamPad[2][col] === PAD_OFF) continue;
+        lastParamPad[2][col] = PAD_OFF;
+        move_midi_internal_send([0x09, 0x90, PAD_ROW_BASE[3] + col, PAD_OFF]);
+    }
+}
+
 function updateParamPadLeds() {
     if (typeof move_midi_internal_send !== "function") return;
     const rows = (PAD_PAGES[S.parmPage] || {}).rows || [];
@@ -820,6 +863,10 @@ const S = {
     toast: "",       /* what the last page movement did */
     toastAt: 0,
     status: "idle",  /* the module's own word for what a stamp is doing */
+    pats: 0,         /* bitmask of filled pattern slots */
+    patCur: 0,       /* which slot this buffer came from, 1-based, 0 = none */
+    patPad: -1,      /* pattern pad being held, for store-on-long-press */
+    patAt: 0,
     anchored: false, /* whether anchorMs has been set at all */
     trigKnob: -1,    /* knob whose trigger already fired this gesture */
     trigAt: 0,       /* when it fired, for the latch */
@@ -1615,6 +1662,16 @@ globalThis.canvas_overlay = {
          * the OTHER surface, so asking only when we pressed something would
          * make this screen right exactly half the time.
          */
+        const pt = ctx.getParam("patterns");
+        if (pt !== null && pt !== undefined) {
+            /* "<mask hex>|<current, 1-based, 0 = none>" -- one read, sixteen
+             * buttons. See the module's `patterns` key. */
+            const bits = String(pt).split("|");
+            const m = parseInt(bits[0], 16);
+            S.pats = Number.isFinite(m) ? m : 0;
+            const c = parseInt(bits[1], 10);
+            S.patCur = Number.isFinite(c) ? c : 0;
+        }
         const st = ctx.getParam("status");
         if (st !== null && st !== undefined) {
             const was = S.status;
@@ -1739,7 +1796,8 @@ globalThis.canvas_overlay = {
         /* The pad row follows the playhead, so it updates per frame like the
          * head does -- and costs nothing when nothing moved. */
         updatePadLeds();
-        updateParamPadLeds();
+        if ((PAD_PAGES[S.parmPage] || {}).patterns) updatePatternPadLeds();
+        else updateParamPadLeds();
     },
 
     onMidi(ctx, payload) {
@@ -1765,6 +1823,52 @@ globalThis.canvas_overlay = {
          * still available on the jog, which is why that stays silent.
          */
         if (status === 0x90 || status === 0x80) {
+            /*
+             * THE PATTERN SLOTS. Rows 2 and 3 are sixteen stored buffers:
+             *
+             *   press        recall that pattern
+             *   hold         store the buffer into it
+             *   DELETE+press delete it
+             *
+             * Store is the LONG press rather than a modifier because storing
+             * is the thing you do deliberately and recall is the thing you do
+             * in a hurry -- and because a long press can be felt, so a slot is
+             * never overwritten by a fumbled recall. It fires on the RELEASE
+             * (see the hold tracking below), since `tick` cannot act.
+             */
+            if ((PAD_PAGES[S.parmPage] || {}).patterns) {
+                const prow = d1 >= PAD_ROW_BASE[1] && d1 < PAD_ROW_BASE[1] + PAD_ROW_LEN ? 0
+                           : d1 >= PAD_ROW_BASE[2] && d1 < PAD_ROW_BASE[2] + PAD_ROW_LEN ? 1
+                           : -1;
+                if (prow >= 0) {
+                    const n = prow * PAD_ROW_LEN + (d1 - PAD_ROW_BASE[prow + 1]) + 1;
+                    if (status === 0x90 && d2 > 0) {
+                        if (S.shift) {              /* MUTE held: delete */
+                            ctx.setParam("pat_delete", String(n));
+                            say(ctx, "PATTERN " + n + " DELETED");
+                            refresh(ctx);
+                            return;
+                        }
+                        S.patPad = n; S.patAt = (typeof ctx.now === "function" ? ctx.now() : Date.now());
+                        return;
+                    }
+                    if (S.patPad === n) {
+                        const held = (typeof ctx.now === "function" ? ctx.now() : Date.now()) - S.patAt;
+                        S.patPad = -1;
+                        if (held >= LONG_PRESS_MS) {
+                            ctx.setParam("pat_store", String(n));
+                            say(ctx, "PATTERN " + n + " STORED");
+                        } else {
+                            ctx.setParam("pat_recall", String(n));
+                            say(ctx, "PATTERN " + n);
+                            refreshBank(ctx);
+                        }
+                        refresh(ctx);
+                    }
+                    return;
+                }
+            }
+
             /* Rows 2-4 write one value to the selected chord, on the press. */
             for (let r = 1; r <= 3; r++) {
                 const col = d1 - PAD_ROW_BASE[r];
@@ -1864,8 +1968,9 @@ globalThis.canvas_overlay = {
              * does not tell you which pad does what. */
             /* The rows are named, not abbreviated from the key: `ccolour`
              * truncates to "CCO", which names nothing. */
-            say(ctx, pg ? `${pg.name}: ${pg.rows.map((r) => r.label).join(" ")}`
-                        : "ROWS");
+            say(ctx, !pg ? "ROWS"
+                   : pg.patterns ? `${pg.name}: 16 SLOTS`
+                   : `${pg.name}: ${pg.rows.map((r) => r.label).join(" ")}`);
             refreshBank(ctx);          /* the new rows need their values */
             return;
         }

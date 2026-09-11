@@ -98,6 +98,20 @@ gets wrong:
   back and returns when that take's transport stops. Pressing the same control
   while armed CANCELS, because a state whose only exit was Move's stop button
   is a state the surface that entered it could not leave.
+- **A PATTERN IS THE BUFFER, NOT A CLIP.** Sixteen slots holding the
+  progression, the clip LENGTH it was written against and the voice grouping
+  it was voiced with -- nothing touches Song.abl, so storing is free and Move
+  cannot overwrite it. Three rules the obvious version gets wrong: recall
+  brings the BARS with it (a twelve-bar phrase recalled into a four-bar clip
+  otherwise leaves two thirds of itself outside, playing and drawn and absent
+  from any stamp); `pat_cur` means "where this buffer CAME FROM", so deleting
+  the current slot clears it, because a lit button over an empty slot is a lie
+  the eye cannot check; and store/delete capture NO undo while recall does --
+  an undo stack filling with "you pressed store" pushes the edit you wanted to
+  undo off the end of it. They ride in the `state` blob behind an `@` marker so
+  a blob written before patterns existed still loads, and `patterns` is one
+  read -- a mask and the current slot -- that draws all sixteen buttons on both
+  surfaces. `tests/test_stacks_patterns.sh`.
 - **THE MODULE MUST NOT BE DRIVEN BY ITS OWN OUTPUT.** An incoming note is a
   chord SELECTOR by pitch class -- that is the feature, so a pad, a keyboard
   and a clip can all drive it. But its output goes to the track and the track

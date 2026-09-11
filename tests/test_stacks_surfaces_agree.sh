@@ -169,7 +169,7 @@ ov.onOpen(ctx);
  * word that says what a stamp is doing (`status`). Anything else appearing
  * here is a page's worth of reads arriving four times a second.
  */
-const POLLED = ["prog", "status"];
+const POLLED = ["prog", "status", "patterns"];
 reads = []; ov.onPoll(ctx);
 check(reads.length <= POLLED.length && reads.every((k) => POLLED.includes(k)),
       "an idle poll read " + reads.join(",") + " -- a poll may read only " + POLLED.join(","));

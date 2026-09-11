@@ -12,6 +12,9 @@ and both show the same selection, the same playhead and the same transport.
 * **The staff is the picture**: pitches, the rhythm as the hits it plays, the
   chord names along the foot, and a keyboard down the side that lights the
   notes as they sound.
+* **Sixteen pattern slots** — whole progressions stored in the module, not in
+  clips: tap to recall, hold to store. A pattern brings its clip length with
+  it, and they travel with the set.
 * **Stamp to a clip** by arming one lap: Move records what you just heard,
   on its own downbeat.
 

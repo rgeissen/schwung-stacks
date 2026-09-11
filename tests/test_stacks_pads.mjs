@@ -203,9 +203,16 @@ check("pad past the end is inert", writes.join(", ") || "(nothing)", "(nothing)"
   check("Up names the page AND its rows",
         /^VOICE: INV COL OCT$/.test(S.toast), true);
   ov.onMidi(ctx, { data:[0xB0, 55, 127] });                 /* -> FEEL */
+  ov.onMidi(ctx, { data:[0xB0, 55, 127] });                 /* -> PATTERNS */
+  /* The store page names itself and its SIZE: it has no value rows to list,
+     and "PATTERNS:" with nothing after it reads as a page that failed. */
+  check("the store page names what it is", /^PATTERNS: 16 SLOTS$/.test(S.toast), true);
   ov.onMidi(ctx, { data:[0xB0, 55, 127] });                 /* clamped */
   check("a press that changed nothing says so",
         /SET$/.test(S.toast), true);
+  /* Back to FEEL: the scroll below is about a long VALUE row, and the store
+     page has none -- it is sixteen slots, not a list to page through. */
+  ov.onMidi(ctx, { data:[0xB0, 54, 127] });                 /* Down: -> FEEL */
   ov.onMidi(ctx, { data:[0xB0, 63, 127] });                 /* scroll 24 rhythms */
   check("a scroll says where in the list", /OF 24$/.test(S.toast), true);
   ov.onMidi(ctx, { data:[0xB0, 54, 127] });

@@ -143,6 +143,25 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0}
 .stat.ok{color:#4FD1E0;border-color:#1D3A40}
 .stat.failed{color:var(--warn);border-color:#4A2020}
 .acts{display:flex;gap:6px;margin-left:10px;align-items:center}
+/*
+ * THE PATTERN GRID: sixteen slots, two rows of eight, exactly as they sit
+ * under your hand on the device -- so the picture on the screen and the
+ * buttons on the Move are the same shape, and a slot you learned in one place
+ * is in the same place in the other.
+ */
+.pats{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:2px}
+.pat{aspect-ratio:1;min-height:0;border-radius:7px;font:600 11px/1 ui-monospace,SF Mono,monospace;
+  background:var(--sunk);border:1px solid var(--line);color:var(--dim);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .1s,color .1s,border-color .1s}
+.pat.full{background:#243042;border-color:#33506e;color:#9DC3E6}
+.pat.cur{background:var(--gold);border-color:var(--gold);color:#0B0E13}
+.pat:active{transform:scale(.94)}
+.patrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.pathint{font:500 10px/1.2 ui-monospace,SF Mono,monospace;color:var(--dim);letter-spacing:.04em}
+.patdel{padding:4px 10px;border-radius:7px;background:var(--raised);border:1px solid var(--line);
+  color:var(--dim);font:600 10px/1 ui-monospace,SF Mono,monospace;letter-spacing:.06em}
+.patdel.on{background:var(--warn);border-color:var(--warn);color:#0B0E13}
 .act{width:38px;height:38px;flex:0 0 auto;border-radius:10px;
   background:var(--raised);border:1px solid var(--line);color:var(--dim);
   display:flex;align-items:center;justify-content:center;
@@ -1214,7 +1233,7 @@ var BANKS = [
        measured at 142s -- so the choice only offered a mode that silently
        loses. The param survives for state compatibility and defaults to rec
        arm; the stamp button asserts that mode when it fires. */
-    keys:["read","read_mode","stamp","clear","lanes","run",
+    keys:["patterns","read","read_mode","stamp","clear","lanes","run",
           "duplicate","stretch","compress","undo"] },
 ];
 var bank = "chord";
@@ -1243,7 +1262,7 @@ function buildTabs(){
  * about this panel, and a rule derived from the control type could not tell
  * those two groupings apart.
  */
-var SPAN = {
+var SPAN = { patterns:6,
   /* Inversion, Length and Offset are one even row of three: they are the
      three numbers that describe WHEN and HOW a chord sits, and reading them
      together is the point. Velocity takes the row after, on its own -- it is
@@ -1257,7 +1276,66 @@ var SPAN = {
   read_mode:3, stamp_mode:3, lanes:3, run:3,
   read:3, stamp:3, clear:3, duplicate:3, stretch:3, compress:3, undo:3
 };
+/*
+ * SIXTEEN PATTERN SLOTS -- the same sixteen the Move's PATTERNS pad page
+ * shows, reading the same one value.
+ *
+ * A slot has three states and they are three colours, because you cannot find
+ * out which by pressing: an empty one does nothing and a full one replaces
+ * your buffer. Click recalls, HOLD stores (the deliberate gesture is the slow
+ * one, so a fumbled recall cannot overwrite work), and the Delete toggle turns
+ * the grid into a delete surface rather than hiding deletion behind a chord.
+ *
+ * It is a "key" on the CLIP bank without being a param: `patterns` is read-only
+ * on the module, and the three verbs are separate write params.
+ */
+var patDel = false;
+function patternControl(){
+  var el = shell("PATTERNS", "");
+  var raw = String(get("patterns") || "0000|0").split("|");
+  var mask = parseInt(raw[0], 16) || 0, cur = parseInt(raw[1], 10) || 0;
+  var grid = document.createElement("div"); grid.className = "pats";
+  for (var i = 1; i <= 16; i++) (function(n){
+    var b = document.createElement("button");
+    var filled = (mask >> (n - 1)) & 1;
+    b.className = "pat" + (filled ? " full" : "") + (n === cur ? " cur" : "");
+    b.textContent = String(n);
+    b.setAttribute("aria-label", "Pattern " + n + (filled
+        ? (n === cur ? ", loaded" : ", stored") : ", empty"));
+    var t = 0, held = false;
+    b.onpointerdown = function(ev){
+      ev.preventDefault();
+      if (patDel){ set("pat_delete", n); return; }
+      held = false;
+      t = setTimeout(function(){ held = true; set("pat_store", n); }, 500);
+    };
+    var up = function(){
+      clearTimeout(t);
+      if (patDel || held) return;
+      if (filled) set("pat_recall", n);
+      else set("pat_store", n);      /* an empty slot has one obvious meaning */
+    };
+    b.onpointerup = up;
+    b.onpointercancel = function(){ clearTimeout(t); };
+    grid.appendChild(b);
+  })(i);
+  el.appendChild(grid);
+  var row = document.createElement("div"); row.className = "patrow";
+  var hint = document.createElement("span");
+  hint.className = "pathint";
+  hint.textContent = patDel ? "tap a slot to delete it" : "tap recall · hold store";
+  var del = document.createElement("button");
+  del.className = "patdel" + (patDel ? " on" : "");
+  del.textContent = patDel ? "CANCEL" : "DELETE";
+  del.setAttribute("aria-pressed", String(patDel));
+  del.onclick = function(){ patDel = !patDel; render(); };
+  row.appendChild(hint); row.appendChild(del);
+  el.appendChild(row);
+  return el;
+}
+
 var BESPOKE = {
+  patterns: patternControl,
   root: kbdControl, key: kbdControl,
   rhythm: rhythmControl,
   degree: degreeControl,
@@ -1720,7 +1798,9 @@ function buildPane(){
 
   pane.innerHTML = "";
   B.keys.forEach(function(k){
-    if (!META[k]) return;
+    /* A BESPOKE control knows its own shape, so it does not need META -- which
+       `patterns` has none of: it is a read-only extra key, not a param. */
+    if (!META[k] && !BESPOKE[k]) return;
     var el = (BESPOKE[k] || genericControl)(k);
     if (!el) return;
     el.classList.remove("half", "third");

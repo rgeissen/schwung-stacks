@@ -35,7 +35,8 @@
           "extra_keys": [
             "prog",
             "status",
-            "bypassed"
+            "bypassed",
+            "patterns"
           ]
         }
       },
@@ -805,6 +806,36 @@
         ],
         "default": 0,
         "access": "write"
+      },
+      {
+        "key": "pat_store",
+        "name": "Store Pattern",
+        "short_name": "PSt",
+        "type": "int",
+        "min": 1,
+        "max": 16,
+        "default": 1,
+        "step": 1
+      },
+      {
+        "key": "pat_recall",
+        "name": "Recall Pattern",
+        "short_name": "PRc",
+        "type": "int",
+        "min": 1,
+        "max": 16,
+        "default": 1,
+        "step": 1
+      },
+      {
+        "key": "pat_delete",
+        "name": "Delete Pattern",
+        "short_name": "PDl",
+        "type": "int",
+        "min": 1,
+        "max": 16,
+        "default": 1,
+        "step": 1
       },
       {
         "key": "play",

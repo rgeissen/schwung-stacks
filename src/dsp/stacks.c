@@ -58,6 +58,16 @@
  */
 #define STK_UNDO_DEPTH   24
 #define STK_MAX_CHORDS   16
+/*
+ * SIXTEEN PATTERN SLOTS, because that is how many buttons there are.
+ *
+ * A pattern is the BUFFER -- the progression, its clip length and its voice
+ * grouping -- and emphatically not a clip: nothing here touches Song.abl, so
+ * storing costs nothing and cannot be overwritten by Move. At ~16 chords a
+ * slot that is a few KB for all sixteen, against a 128KB param value, and the
+ * module already carries 24 undo snapshots of the same shape.
+ */
+#define STK_PATTERNS     16
 #define STK_MAX_TONES    6
 /* Repeat stamps the whole chord up to 4 times, so the schedule is that many
  * times the voice count. Sizing this to STK_MAX_TONES silently dropped every
@@ -226,129 +236,134 @@ static const char CHAIN_PARAMS_JSON[] =
     "s_script\":\"canvas.js\",\"show_value\":false,\"show_footer\":false,\"claims_jog_click\""
     ":true},{\"key\":\"sel\",\"name\":\"Chord\",\"short_name\":\"Chord\",\"type\":\"int\",\"m"
     "in\":1,\"max\":16,\"default\":1,\"step\":1,\"viz\":{\"kind\":\"custom:stkstaff\",\"extra"
-    "_keys\":[\"prog\",\"status\",\"bypassed\"]}},{\"key\":\"root\",\"name\":\"Root\",\"short"
-    "_name\":\"Root\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"C1\",\"C#1"
-    "\",\"D1\",\"D#1\",\"E1\",\"F1\",\"F#1\",\"G1\",\"G#1\",\"A1\",\"A#1\",\"B1\",\"C2\",\"C#"
-    "2\",\"D2\",\"D#2\",\"E2\",\"F2\",\"F#2\",\"G2\",\"G#2\",\"A2\",\"A#2\",\"B2\",\"C3\",\"C"
-    "#3\",\"D3\",\"D#3\",\"E3\",\"F3\",\"F#3\",\"G3\",\"G#3\",\"A3\",\"A#3\",\"B3\",\"C4\",\""
-    "C#4\",\"D4\",\"D#4\",\"E4\",\"F4\",\"F#4\",\"G4\",\"G#4\",\"A4\",\"A#4\",\"B4\",\"C5\","
-    "\"C#5\",\"D5\",\"D#5\",\"E5\",\"F5\",\"F#5\",\"G5\",\"G#5\",\"A5\",\"A#5\",\"B5\"],\"def"
-    "ault\":36},{\"key\":\"degree\",\"name\":\"Scale Degree\",\"short_name\":\"Deg\",\"option"
-    "s_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"I\",\"II\",\"II"
-    "I\",\"IV\",\"V\",\"VI\",\"VII\",\"rest\"],\"default\":0},{\"key\":\"coct\",\"name\":\"Ch"
-    "ord Oct\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\"max\":5,\"default\":4,\"st"
-    "ep\":1},{\"key\":\"family\",\"name\":\"Shape Family\",\"short_name\":\"Fam\",\"options_a"
-    "s_string\":true,\"type\":\"enum\",\"options\":[\"5th\",\"triad\",\"6th\",\"7th\",\"9th\""
-    ",\"ext\"],\"default\":1},{\"key\":\"shape\",\"name\":\"Chord Shape\",\"short_name\":\"Sh"
-    "ape\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"rest\",\"note\",\"5\","
-    "\"oct\",\"maj\",\"min\",\"dim\",\"aug\",\"sus2\",\"sus4\",\"6\",\"m6\",\"69\",\"maj7\","
-    "\"min7\",\"dom7\",\"m7b5\",\"dim7\",\"mMaj7\",\"7sus4\",\"7sus2\",\"aug7\",\"maj7#5\",\""
-    "7b5\",\"add9\",\"madd9\",\"maj9\",\"min9\",\"9\",\"7b9\",\"7#9\",\"m9b5\",\"11\",\"m11\""
-    ",\"maj11\",\"13\",\"maj13\",\"m13\"],\"default\":4},{\"key\":\"inv\",\"name\":\"Inversio"
-    "n\",\"short_name\":\"Inv\",\"type\":\"int\",\"min\":-3,\"max\":3,\"default\":0,\"step\":"
-    "1},{\"key\":\"len\",\"name\":\"Length\",\"short_name\":\"Len\",\"type\":\"int\",\"min\":"
-    "1,\"max\":64,\"default\":8,\"step\":1},{\"key\":\"off\",\"name\":\"Offset\",\"short_name"
-    "\":\"Off\",\"type\":\"int\",\"min\":0,\"max\":15,\"default\":0,\"step\":1},{\"key\":\"cc"
-    "olour\",\"name\":\"Colour\",\"short_name\":\"Col\",\"options_as_string\":true,\"type\":"
-    "\"enum\",\"options\":[\"close\",\"open\",\"drop2\",\"drop3\",\"drop2+4\",\"shell\",\"roo"
-    "tless\",\"quartal\",\"spread\",\"cluster\"],\"default\":0},{\"key\":\"cstrum\",\"name\":"
-    "\"Strum\",\"short_name\":\"Strm\",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,"
-    "\"step\":1},{\"key\":\"cvel\",\"name\":\"Chord Vel\",\"short_name\":\"CVel\",\"type\":\""
-    "int\",\"min\":-63,\"max\":63,\"default\":0,\"step\":1},{\"key\":\"cgate\",\"name\":\"Cho"
-    "rd Gate\",\"short_name\":\"CGat\",\"type\":\"int\",\"min\":-50,\"max\":50,\"default\":0,"
-    "\"step\":1},{\"key\":\"cmute\",\"name\":\"Mute\",\"short_name\":\"Mute\",\"options_as_st"
-    "ring\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"rhy"
-    "thm\",\"name\":\"Rhythm\",\"short_name\":\"Rhy\",\"options_as_string\":true,\"type\":\"e"
-    "num\",\"options\":[\"hold\",\"half\",\"quarter\",\"eighth\",\"16th\",\"offbeat\",\"dotte"
-    "d\",\"push\",\"tresillo\",\"son 3-2\",\"son 2-3\",\"rumba\",\"bossa\",\"baiao\",\"montun"
-    "o\",\"charl\",\"charl 2\",\"shuffle\",\"comp\",\"gallop\",\"drive\",\"anthem\",\"garage"
-    "\",\"broken\"],\"default\":0},{\"key\":\"ctrans\",\"name\":\"Transpose\",\"short_name\":"
-    "\"Trns\",\"type\":\"int\",\"min\":-12,\"max\":12,\"default\":0,\"step\":1},{\"key\":\"ge"
-    "nre\",\"name\":\"Genre\",\"short_name\":\"Gen\",\"options_as_string\":true,\"type\":\"en"
-    "um\",\"options\":[\"none\",\"Pop\",\"Rock\",\"Metal\",\"Jazz\",\"Blues\",\"Soul\",\"Gosp"
-    "el\",\"Funk\",\"R&B\",\"Bossa\",\"Latin\",\"House\",\"Reggae\",\"Country\",\"Cinematic\""
-    "],\"default\":0},{\"key\":\"progression\",\"name\":\"Progression\",\"short_name\":\"Prog"
-    "\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\",\"Axis\",\"Sad Axi"
-    "s\",\"Doo-wop\",\"Pachelbel\",\"Royal Road\",\"Emotional\",\"I-IV-V\",\"Mixolydian\",\"G"
-    "runge\",\"Anthem\",\"Thrash\",\"Power Metal\",\"Doom\",\"Phrygian\",\"ii-V-I\",\"Minor i"
-    "i-V\",\"Rhythm A\",\"Turnaround\",\"Coltrane\",\"Tritone\",\"Bird Blues\",\"Modal\",\"12"
-    "-bar\",\"Quick IV\",\"Minor blues\",\"8-bar\",\"Neo-soul\",\"Montuno\",\"iii-vi-ii-V\","
-    "\"Slow jam\",\"Plagal\",\"Shouting\",\"Walk-up\",\"Amen\",\"JB vamp\",\"Funk turn\",\"P-"
-    "Funk\",\"Clav\",\"Two-chord\",\"Minor lift\",\"Quiet storm\",\"Ipanema\",\"Wave\",\"Desa"
-    "finado\",\"Corcovado\",\"Guajira\",\"Bolero\",\"Salsa\",\"Deep vamp\",\"Two-bar\",\"Filt"
-    "er\",\"Garage\",\"Skank\",\"Roots minor\",\"Rockers\",\"Boot scoot\",\"Train\",\"Andalus"
-    "ian\",\"Aeolian\",\"Dorian\",\"Picardy\",\"Ostinato\",\"Lament\"],\"default\":0},{\"key"
-    "\":\"common\",\"name\":\"Common Prog\",\"short_name\":\"Cmn\",\"options_as_string\":true"
-    ",\"type\":\"enum\",\"options\":[\"none\",\"I-V-vi-IV\",\"vi-IV-I-V\",\"I-vi-IV-V\",\"I-I"
-    "V-V\",\"I-IV-I-V\",\"ii-V-I\",\"I-V-IV\",\"I-iii-IV-V\",\"vi-V-IV-V\",\"i-VI-III-VII\","
-    "\"i-iv-v\",\"i-VII-VI-VII\"],\"default\":0},{\"key\":\"uncommon\",\"name\":\"Uncommon\","
-    "\"short_name\":\"Unc\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none"
-    "\",\"I-bIII-IV-iv\",\"Phrygian\",\"Lydian II\",\"Backdoor\",\"bVI-bVII-I\",\"i-v-bVI-bVI"
-    "I\",\"Chrom desc\",\"Borrowed IV\",\"Secondary V\",\"i-bVI-iv-V\",\"Double plagal\",\"Au"
-    "g lift\",\"Tritone col\"],\"default\":0},{\"key\":\"colour\",\"name\":\"Colour\",\"short"
-    "_name\":\"Col\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"close\",\"op"
-    "en\",\"drop2\",\"drop3\",\"drop2+4\",\"shell\",\"rootless\",\"quartal\",\"spread\",\"clu"
-    "ster\"],\"default\":0},{\"key\":\"grouping\",\"name\":\"Voice Grouping\",\"short_name\":"
-    "\"Grp\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\",\"dynamic\","
-    "\"dyn +1oct\",\"dyn +2oct\",\"C1-B2\",\"C2-B3\",\"C3-B4\",\"open 1\",\"open 2\",\"open 3"
-    "\",\"guitar\",\"drop 2\",\"drop 3\",\"drop 4\",\"drop 2+3\",\"drop 2+4\"],\"default\":0}"
-    ",{\"key\":\"scale\",\"name\":\"Scale\",\"short_name\":\"Scale\",\"options_as_string\":tr"
-    "ue,\"type\":\"enum\",\"options\":[\"Chromatic\",\"Major\",\"Minor\",\"Dorian\",\"Phrygia"
-    "n\",\"Lydian\",\"Mixolydian\",\"Locrian\",\"HarmMinor\",\"MelMinor\",\"PentMaj\",\"PentM"
-    "in\",\"Blues\"],\"default\":2},{\"key\":\"key\",\"name\":\"Key\",\"short_name\":\"Key\","
-    "\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"C\",\"C#\",\"D\",\"D#\",\"E"
-    "\",\"F\",\"F#\",\"G\",\"G#\",\"A\",\"A#\",\"B\"],\"default\":9},{\"key\":\"steps\",\"nam"
-    "e\":\"Chords\",\"short_name\":\"Chrds\",\"type\":\"int\",\"min\":1,\"max\":16,\"default"
-    "\":4,\"step\":1},{\"key\":\"rate\",\"name\":\"New Chord Len\",\"short_name\":\"Rte\",\"o"
-    "ptions_as_string\":true,\"type\":\"enum\",\"options\":[\"2 bar\",\"1 bar\",\"1/2\",\"1/4"
-    "\"],\"default\":1},{\"key\":\"run\",\"name\":\"Run\",\"short_name\":\"Run\",\"options_as"
-    "_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":1},{\"key\":\""
-    "octave\",\"name\":\"Octave\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":-2,\"max\":"
-    "2,\"default\":0,\"step\":1},{\"key\":\"velocity\",\"name\":\"Velocity\",\"short_name\":"
-    "\"Vel\",\"type\":\"int\",\"min\":1,\"max\":127,\"default\":100,\"step\":1},{\"key\":\"ga"
-    "te\",\"name\":\"Gate\",\"short_name\":\"Gate\",\"type\":\"int\",\"min\":5,\"max\":100,\""
-    "default\":90,\"step\":1},{\"key\":\"hum_vel\",\"name\":\"Human Vel\",\"short_name\":\"Hu"
-    "Vel\",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_v"
-    "el\",\"name\":\"Randomize Vel\",\"short_name\":\"RndVel\",\"options_as_string\":true,\"t"
-    "ype\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\""
-    ":\"hum_time\",\"name\":\"Human Time\",\"short_name\":\"HuTim\",\"type\":\"int\",\"min\":"
-    "0,\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_time\",\"name\":\"Randomize Time"
-    "\",\"short_name\":\"RndTim\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"w"
-    "rite\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"swing\",\"name\":\"Swing\""
-    ",\"short_name\":\"Swng\",\"type\":\"int\",\"min\":0,\"max\":75,\"default\":0,\"step\":1}"
-    ",{\"key\":\"lanes\",\"name\":\"Note Lanes\",\"short_name\":\"Lanes\",\"options_as_string"
-    "\":true,\"type\":\"enum\",\"options\":[\"scale\",\"diatonic\"],\"default\":0},{\"key\":"
-    "\"preview\",\"name\":\"Preview\",\"short_name\":\"Prev\",\"options_as_string\":true,\"ty"
-    "pe\":\"enum\",\"options\":[\"off\",\"chord\",\"loop\"],\"default\":0},{\"key\":\"read\","
-    "\"name\":\"Read Clip\",\"short_name\":\"Read\",\"options_as_string\":true,\"type\":\"enu"
-    "m\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"read_mod"
-    "e\",\"name\":\"Read Mode\",\"short_name\":\"RdMod\",\"options_as_string\":true,\"type\":"
-    "\"enum\",\"options\":[\"replace\",\"append\"],\"default\":0},{\"key\":\"defoct\",\"name"
-    "\":\"Octave Default\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\"max\":5,\"defa"
-    "ult\":3,\"step\":1},{\"key\":\"bars\",\"name\":\"Clip Bars\",\"short_name\":\"Bars\",\"t"
-    "ype\":\"int\",\"min\":1,\"max\":16,\"default\":4,\"step\":1},{\"key\":\"stamp\",\"name\""
-    ":\"Stamp Clip\",\"short_name\":\"Stamp\",\"options_as_string\":true,\"type\":\"enum\",\""
-    "options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"stamp_mode\","
-    "\"name\":\"Stamp Mode (legacy)\",\"short_name\":\"StMod\",\"options_as_string\":true,\"t"
-    "ype\":\"enum\",\"options\":[\"rec arm\",\"write file\"],\"default\":0},{\"key\":\"clear"
-    "\",\"name\":\"Clear\",\"short_name\":\"Clear\",\"options_as_string\":true,\"type\":\"enu"
-    "m\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"play\","
-    "\"name\":\"Play Chord\",\"short_name\":\"Play\",\"options_as_string\":true,\"type\":\"en"
-    "um\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"duplica"
-    "te\",\"name\":\"Duplicate\",\"short_name\":\"Dup\",\"options_as_string\":true,\"type\":"
-    "\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"str"
-    "etch\",\"name\":\"Double Length\",\"short_name\":\"Dbl\",\"options_as_string\":true,\"ty"
-    "pe\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":"
-    "\"compress\",\"name\":\"Half Length\",\"short_name\":\"Hlf\",\"options_as_string\":true,"
-    "\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"ke"
-    "y\":\"undo\",\"name\":\"Undo\",\"short_name\":\"Und\",\"options_as_string\":true,\"type"
-    "\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\""
-    "redo\",\"name\":\"Redo\",\"short_name\":\"Red\",\"options_as_string\":true,\"type\":\"en"
-    "um\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"insert"
-    "\",\"name\":\"Insert Chord\",\"short_name\":\"Ins\",\"options_as_string\":true,\"type\":"
-    "\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"rem"
-    "ove\",\"name\":\"Delete Chord\",\"short_name\":\"Del\",\"options_as_string\":true,\"type"
-    "\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0}]";
+    "_keys\":[\"prog\",\"status\",\"bypassed\",\"patterns\"]}},{\"key\":\"root\",\"name\":\"R"
+    "oot\",\"short_name\":\"Root\",\"options_as_string\":true,\"type\":\"enum\",\"options\":["
+    "\"C1\",\"C#1\",\"D1\",\"D#1\",\"E1\",\"F1\",\"F#1\",\"G1\",\"G#1\",\"A1\",\"A#1\",\"B1\""
+    ",\"C2\",\"C#2\",\"D2\",\"D#2\",\"E2\",\"F2\",\"F#2\",\"G2\",\"G#2\",\"A2\",\"A#2\",\"B2"
+    "\",\"C3\",\"C#3\",\"D3\",\"D#3\",\"E3\",\"F3\",\"F#3\",\"G3\",\"G#3\",\"A3\",\"A#3\",\"B"
+    "3\",\"C4\",\"C#4\",\"D4\",\"D#4\",\"E4\",\"F4\",\"F#4\",\"G4\",\"G#4\",\"A4\",\"A#4\",\""
+    "B4\",\"C5\",\"C#5\",\"D5\",\"D#5\",\"E5\",\"F5\",\"F#5\",\"G5\",\"G#5\",\"A5\",\"A#5\","
+    "\"B5\"],\"default\":36},{\"key\":\"degree\",\"name\":\"Scale Degree\",\"short_name\":\"D"
+    "eg\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"I"
+    "\",\"II\",\"III\",\"IV\",\"V\",\"VI\",\"VII\",\"rest\"],\"default\":0},{\"key\":\"coct\""
+    ",\"name\":\"Chord Oct\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\"max\":5,\"de"
+    "fault\":4,\"step\":1},{\"key\":\"family\",\"name\":\"Shape Family\",\"short_name\":\"Fam"
+    "\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"5th\",\"triad\",\"6th\","
+    "\"7th\",\"9th\",\"ext\"],\"default\":1},{\"key\":\"shape\",\"name\":\"Chord Shape\",\"sh"
+    "ort_name\":\"Shape\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"rest\","
+    "\"note\",\"5\",\"oct\",\"maj\",\"min\",\"dim\",\"aug\",\"sus2\",\"sus4\",\"6\",\"m6\",\""
+    "69\",\"maj7\",\"min7\",\"dom7\",\"m7b5\",\"dim7\",\"mMaj7\",\"7sus4\",\"7sus2\",\"aug7\""
+    ",\"maj7#5\",\"7b5\",\"add9\",\"madd9\",\"maj9\",\"min9\",\"9\",\"7b9\",\"7#9\",\"m9b5\","
+    "\"11\",\"m11\",\"maj11\",\"13\",\"maj13\",\"m13\"],\"default\":4},{\"key\":\"inv\",\"nam"
+    "e\":\"Inversion\",\"short_name\":\"Inv\",\"type\":\"int\",\"min\":-3,\"max\":3,\"default"
+    "\":0,\"step\":1},{\"key\":\"len\",\"name\":\"Length\",\"short_name\":\"Len\",\"type\":\""
+    "int\",\"min\":1,\"max\":64,\"default\":8,\"step\":1},{\"key\":\"off\",\"name\":\"Offset"
+    "\",\"short_name\":\"Off\",\"type\":\"int\",\"min\":0,\"max\":15,\"default\":0,\"step\":1"
+    "},{\"key\":\"ccolour\",\"name\":\"Colour\",\"short_name\":\"Col\",\"options_as_string\":"
+    "true,\"type\":\"enum\",\"options\":[\"close\",\"open\",\"drop2\",\"drop3\",\"drop2+4\","
+    "\"shell\",\"rootless\",\"quartal\",\"spread\",\"cluster\"],\"default\":0},{\"key\":\"cst"
+    "rum\",\"name\":\"Strum\",\"short_name\":\"Strm\",\"type\":\"int\",\"min\":0,\"max\":100,"
+    "\"default\":0,\"step\":1},{\"key\":\"cvel\",\"name\":\"Chord Vel\",\"short_name\":\"CVel"
+    "\",\"type\":\"int\",\"min\":-63,\"max\":63,\"default\":0,\"step\":1},{\"key\":\"cgate\","
+    "\"name\":\"Chord Gate\",\"short_name\":\"CGat\",\"type\":\"int\",\"min\":-50,\"max\":50,"
+    "\"default\":0,\"step\":1},{\"key\":\"cmute\",\"name\":\"Mute\",\"short_name\":\"Mute\","
+    "\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0}"
+    ",{\"key\":\"rhythm\",\"name\":\"Rhythm\",\"short_name\":\"Rhy\",\"options_as_string\":tr"
+    "ue,\"type\":\"enum\",\"options\":[\"hold\",\"half\",\"quarter\",\"eighth\",\"16th\",\"of"
+    "fbeat\",\"dotted\",\"push\",\"tresillo\",\"son 3-2\",\"son 2-3\",\"rumba\",\"bossa\",\"b"
+    "aiao\",\"montuno\",\"charl\",\"charl 2\",\"shuffle\",\"comp\",\"gallop\",\"drive\",\"ant"
+    "hem\",\"garage\",\"broken\"],\"default\":0},{\"key\":\"ctrans\",\"name\":\"Transpose\","
+    "\"short_name\":\"Trns\",\"type\":\"int\",\"min\":-12,\"max\":12,\"default\":0,\"step\":1"
+    "},{\"key\":\"genre\",\"name\":\"Genre\",\"short_name\":\"Gen\",\"options_as_string\":tru"
+    "e,\"type\":\"enum\",\"options\":[\"none\",\"Pop\",\"Rock\",\"Metal\",\"Jazz\",\"Blues\","
+    "\"Soul\",\"Gospel\",\"Funk\",\"R&B\",\"Bossa\",\"Latin\",\"House\",\"Reggae\",\"Country"
+    "\",\"Cinematic\"],\"default\":0},{\"key\":\"progression\",\"name\":\"Progression\",\"sho"
+    "rt_name\":\"Prog\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\",\""
+    "Axis\",\"Sad Axis\",\"Doo-wop\",\"Pachelbel\",\"Royal Road\",\"Emotional\",\"I-IV-V\",\""
+    "Mixolydian\",\"Grunge\",\"Anthem\",\"Thrash\",\"Power Metal\",\"Doom\",\"Phrygian\",\"ii"
+    "-V-I\",\"Minor ii-V\",\"Rhythm A\",\"Turnaround\",\"Coltrane\",\"Tritone\",\"Bird Blues"
+    "\",\"Modal\",\"12-bar\",\"Quick IV\",\"Minor blues\",\"8-bar\",\"Neo-soul\",\"Montuno\","
+    "\"iii-vi-ii-V\",\"Slow jam\",\"Plagal\",\"Shouting\",\"Walk-up\",\"Amen\",\"JB vamp\",\""
+    "Funk turn\",\"P-Funk\",\"Clav\",\"Two-chord\",\"Minor lift\",\"Quiet storm\",\"Ipanema\""
+    ",\"Wave\",\"Desafinado\",\"Corcovado\",\"Guajira\",\"Bolero\",\"Salsa\",\"Deep vamp\",\""
+    "Two-bar\",\"Filter\",\"Garage\",\"Skank\",\"Roots minor\",\"Rockers\",\"Boot scoot\",\"T"
+    "rain\",\"Andalusian\",\"Aeolian\",\"Dorian\",\"Picardy\",\"Ostinato\",\"Lament\"],\"defa"
+    "ult\":0},{\"key\":\"common\",\"name\":\"Common Prog\",\"short_name\":\"Cmn\",\"options_a"
+    "s_string\":true,\"type\":\"enum\",\"options\":[\"none\",\"I-V-vi-IV\",\"vi-IV-I-V\",\"I-"
+    "vi-IV-V\",\"I-IV-V\",\"I-IV-I-V\",\"ii-V-I\",\"I-V-IV\",\"I-iii-IV-V\",\"vi-V-IV-V\",\"i"
+    "-VI-III-VII\",\"i-iv-v\",\"i-VII-VI-VII\"],\"default\":0},{\"key\":\"uncommon\",\"name\""
+    ":\"Uncommon\",\"short_name\":\"Unc\",\"options_as_string\":true,\"type\":\"enum\",\"opti"
+    "ons\":[\"none\",\"I-bIII-IV-iv\",\"Phrygian\",\"Lydian II\",\"Backdoor\",\"bVI-bVII-I\","
+    "\"i-v-bVI-bVII\",\"Chrom desc\",\"Borrowed IV\",\"Secondary V\",\"i-bVI-iv-V\",\"Double "
+    "plagal\",\"Aug lift\",\"Tritone col\"],\"default\":0},{\"key\":\"colour\",\"name\":\"Col"
+    "our\",\"short_name\":\"Col\",\"options_as_string\":true,\"type\":\"enum\",\"options\":["
+    "\"close\",\"open\",\"drop2\",\"drop3\",\"drop2+4\",\"shell\",\"rootless\",\"quartal\",\""
+    "spread\",\"cluster\"],\"default\":0},{\"key\":\"grouping\",\"name\":\"Voice Grouping\","
+    "\"short_name\":\"Grp\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none"
+    "\",\"dynamic\",\"dyn +1oct\",\"dyn +2oct\",\"C1-B2\",\"C2-B3\",\"C3-B4\",\"open 1\",\"op"
+    "en 2\",\"open 3\",\"guitar\",\"drop 2\",\"drop 3\",\"drop 4\",\"drop 2+3\",\"drop 2+4\"]"
+    ",\"default\":0},{\"key\":\"scale\",\"name\":\"Scale\",\"short_name\":\"Scale\",\"options"
+    "_as_string\":true,\"type\":\"enum\",\"options\":[\"Chromatic\",\"Major\",\"Minor\",\"Dor"
+    "ian\",\"Phrygian\",\"Lydian\",\"Mixolydian\",\"Locrian\",\"HarmMinor\",\"MelMinor\",\"Pe"
+    "ntMaj\",\"PentMin\",\"Blues\"],\"default\":2},{\"key\":\"key\",\"name\":\"Key\",\"short_"
+    "name\":\"Key\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"C\",\"C#\",\""
+    "D\",\"D#\",\"E\",\"F\",\"F#\",\"G\",\"G#\",\"A\",\"A#\",\"B\"],\"default\":9},{\"key\":"
+    "\"steps\",\"name\":\"Chords\",\"short_name\":\"Chrds\",\"type\":\"int\",\"min\":1,\"max"
+    "\":16,\"default\":4,\"step\":1},{\"key\":\"rate\",\"name\":\"New Chord Len\",\"short_nam"
+    "e\":\"Rte\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"2 bar\",\"1 bar"
+    "\",\"1/2\",\"1/4\"],\"default\":1},{\"key\":\"run\",\"name\":\"Run\",\"short_name\":\"Ru"
+    "n\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default"
+    "\":1},{\"key\":\"octave\",\"name\":\"Octave\",\"short_name\":\"Oct\",\"type\":\"int\",\""
+    "min\":-2,\"max\":2,\"default\":0,\"step\":1},{\"key\":\"velocity\",\"name\":\"Velocity\""
+    ",\"short_name\":\"Vel\",\"type\":\"int\",\"min\":1,\"max\":127,\"default\":100,\"step\":"
+    "1},{\"key\":\"gate\",\"name\":\"Gate\",\"short_name\":\"Gate\",\"type\":\"int\",\"min\":"
+    "5,\"max\":100,\"default\":90,\"step\":1},{\"key\":\"hum_vel\",\"name\":\"Human Vel\",\"s"
+    "hort_name\":\"HuVel\",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,\"step\":1},{"
+    "\"key\":\"roll_vel\",\"name\":\"Randomize Vel\",\"short_name\":\"RndVel\",\"options_as_s"
+    "tring\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"defau"
+    "lt\":0},{\"key\":\"hum_time\",\"name\":\"Human Time\",\"short_name\":\"HuTim\",\"type\":"
+    "\"int\",\"min\":0,\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_time\",\"name\":"
+    "\"Randomize Time\",\"short_name\":\"RndTim\",\"options_as_string\":true,\"type\":\"enum"
+    "\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"swing\","
+    "\"name\":\"Swing\",\"short_name\":\"Swng\",\"type\":\"int\",\"min\":0,\"max\":75,\"defau"
+    "lt\":0,\"step\":1},{\"key\":\"lanes\",\"name\":\"Note Lanes\",\"short_name\":\"Lanes\","
+    "\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"scale\",\"diatonic\"],\"defa"
+    "ult\":0},{\"key\":\"preview\",\"name\":\"Preview\",\"short_name\":\"Prev\",\"options_as_"
+    "string\":true,\"type\":\"enum\",\"options\":[\"off\",\"chord\",\"loop\"],\"default\":0},"
+    "{\"key\":\"read\",\"name\":\"Read Clip\",\"short_name\":\"Read\",\"options_as_string\":t"
+    "rue,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{"
+    "\"key\":\"read_mode\",\"name\":\"Read Mode\",\"short_name\":\"RdMod\",\"options_as_strin"
+    "g\":true,\"type\":\"enum\",\"options\":[\"replace\",\"append\"],\"default\":0},{\"key\":"
+    "\"defoct\",\"name\":\"Octave Default\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1"
+    ",\"max\":5,\"default\":3,\"step\":1},{\"key\":\"bars\",\"name\":\"Clip Bars\",\"short_na"
+    "me\":\"Bars\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":4,\"step\":1},{\"key\":"
+    "\"stamp\",\"name\":\"Stamp Clip\",\"short_name\":\"Stamp\",\"options_as_string\":true,\""
+    "type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key"
+    "\":\"stamp_mode\",\"name\":\"Stamp Mode (legacy)\",\"short_name\":\"StMod\",\"options_as"
+    "_string\":true,\"type\":\"enum\",\"options\":[\"rec arm\",\"write file\"],\"default\":0}"
+    ",{\"key\":\"clear\",\"name\":\"Clear\",\"short_name\":\"Clear\",\"options_as_string\":tr"
+    "ue,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{"
+    "\"key\":\"pat_store\",\"name\":\"Store Pattern\",\"short_name\":\"PSt\",\"type\":\"int\""
+    ",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"pat_recall\",\"name\":\"Recal"
+    "l Pattern\",\"short_name\":\"PRc\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,"
+    "\"step\":1},{\"key\":\"pat_delete\",\"name\":\"Delete Pattern\",\"short_name\":\"PDl\","
+    "\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"play\",\"name"
+    "\":\"Play Chord\",\"short_name\":\"Play\",\"options_as_string\":true,\"type\":\"enum\","
+    "\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"duplicate\","
+    "\"name\":\"Duplicate\",\"short_name\":\"Dup\",\"options_as_string\":true,\"type\":\"enum"
+    "\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"stretch\""
+    ",\"name\":\"Double Length\",\"short_name\":\"Dbl\",\"options_as_string\":true,\"type\":"
+    "\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"com"
+    "press\",\"name\":\"Half Length\",\"short_name\":\"Hlf\",\"options_as_string\":true,\"typ"
+    "e\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":"
+    "\"undo\",\"name\":\"Undo\",\"short_name\":\"Und\",\"options_as_string\":true,\"type\":\""
+    "enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"redo"
+    "\",\"name\":\"Redo\",\"short_name\":\"Red\",\"options_as_string\":true,\"type\":\"enum\""
+    ",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"insert\",\""
+    "name\":\"Insert Chord\",\"short_name\":\"Ins\",\"options_as_string\":true,\"type\":\"enu"
+    "m\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"remove\""
+    ",\"name\":\"Delete Chord\",\"short_name\":\"Del\",\"options_as_string\":true,\"type\":\""
+    "enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0}]";
 /* ---- END GENERATED chain_params ---- */
 
 /* ======================================================================
@@ -646,6 +661,21 @@ typedef struct {
 } stk_prog_t;
 
 /*
+ * A STORED PATTERN IS THE BUFFER, not a clip.
+ *
+ * The progression, the clip LENGTH it was written against, and the voice
+ * grouping it was voiced with -- because recalling a 12-bar phrase into a
+ * 4-bar clip would truncate it silently, which is the failure `bars` already
+ * has a rule about elsewhere in this file.
+ */
+typedef struct {
+    int used;
+    stk_prog_t prog;
+    int bars;
+    int grouping;
+} stk_pattern_t;
+
+/*
  * THE PROGRESSION IS A SEQUENCE OF DURATIONS, NOT SLOTS ON A GRID.
  *
  * Each chord occupies `len` units and the next one begins where it ends, so
@@ -751,6 +781,10 @@ typedef struct {
 
 typedef struct {
     stk_prog_t prog;
+
+    /* Sixteen stored buffers and which one is on screen (-1 = none). */
+    stk_pattern_t pat[STK_PATTERNS];
+    int pat_cur;
 
     /* --- edit / playback settings --- */
     int sel;            /* 1..count, the chord the knobs edit */
@@ -2275,6 +2309,7 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     st->stamp_mode = 0;
     st->held_pad = -1;
     st->held_mask = 0;
+    st->pat_cur = -1;
     st->cur_step = -1;
     st->recv_ch = 1;
     for (int i = 0; i < STK_MAX_VOICES; i++) st->voice[i].note = -1;
@@ -2838,6 +2873,51 @@ static void transpose_prog(stk_t *st, int semis, int unit) {
  * Comparing the result against the newest stored state is O(one memcmp of
  * under a kilobyte) and cannot be forgotten by a future edit path.
  */
+/*
+ * STORE / RECALL / DELETE, and the one rule that matters between them:
+ * RECALL BRINGS THE CLIP LENGTH WITH IT.
+ *
+ * A pattern is the progression AND the bars it was written against. Recalling
+ * a twelve-bar phrase into a four-bar clip would leave two thirds of it
+ * outside -- playing, drawn, and absent from anything Stamp writes -- which is
+ * the silent truncation `grow_bars_to_fit` exists to prevent everywhere else.
+ *
+ * `pat_cur` is what the lit button means: not "the last one you pressed" but
+ * "the one this buffer came from". Storing sets it, recalling sets it, and
+ * deleting the current one clears it -- because a lit button pointing at an
+ * empty slot is a lie the eye cannot check.
+ */
+static void pattern_store(stk_t *st, int i) {
+    if (i < 0 || i >= STK_PATTERNS) return;
+    st->pat[i].used     = 1;
+    st->pat[i].prog     = st->prog;
+    st->pat[i].bars     = st->bars;
+    st->pat[i].grouping = st->grouping;
+    st->pat_cur = i;
+}
+
+static void pattern_recall(stk_t *st, int i) {
+    if (i < 0 || i >= STK_PATTERNS || !st->pat[i].used) return;
+    st->prog     = st->pat[i].prog;
+    st->bars     = st->pat[i].bars > 0 ? clampi(st->pat[i].bars, 1, 16) : st->bars;
+    st->bars_manual = 1;     /* the length came WITH the pattern; do not refit */
+    st->grouping = clampi(st->pat[i].grouping, 0, NUM_GROUPINGS - 1);
+    if (st->prog.count < 1) st->prog.count = 1;
+    st->sel = clampi(st->sel, 1, st->prog.count);
+    st->pat_cur = i;
+    /* Stop what the previous buffer had scheduled -- the same three lines a
+     * release uses, since the chords under the playhead have just changed. */
+    st->armed_id = 0;
+    st->pend_n = 0;
+    st->cut_pending = 1;
+}
+
+static void pattern_delete(stk_t *st, int i) {
+    if (i < 0 || i >= STK_PATTERNS) return;
+    st->pat[i].used = 0;
+    if (st->pat_cur == i) st->pat_cur = -1;
+}
+
 static void undo_capture(stk_t *st) {
     if (st->hist_busy) return;
     if (st->hist_depth > 0 &&
@@ -3079,12 +3159,20 @@ static void stk_set_param(void *instance, const char *key, const char *val) {
      *   undo/redo -- they restore a clip length from history; re-fitting would
      *            overwrite what was restored with what happens to fit now.
      */
+    if (strcmp(key, "pat_recall") == 0) return;   /* it brought its own bars */
     if (strcmp(key, "bars") != 0 && strcmp(key, "undo") != 0 &&
         strcmp(key, "redo") != 0 && strcmp(key, "state") != 0)
         grow_bars_to_fit(st);
 
+    /*
+     * Storing and deleting a pattern do not touch the buffer, so they capture
+     * nothing -- an undo stack filling with "you pressed store" would push the
+     * edit you actually wanted to undo off the end of it. RECALL does replace
+     * the buffer and is captured, so recalling by accident is undoable.
+     */
     if (strcmp(key, "undo") != 0 && strcmp(key, "redo") != 0 &&
-        strcmp(key, "state") != 0)
+        strcmp(key, "state") != 0 &&
+        strcmp(key, "pat_store") != 0 && strcmp(key, "pat_delete") != 0)
         undo_capture(st);
 }
 
@@ -3699,6 +3787,12 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
                    above: CC 118 is claimed by the shim's sampler. */
             }
         }
+    } else if (strcmp(key, "pat_store") == 0) {
+        pattern_store(st, atoi(val) - 1);      /* 1-based on the wire, like sel */
+    } else if (strcmp(key, "pat_recall") == 0) {
+        pattern_recall(st, atoi(val) - 1);
+    } else if (strcmp(key, "pat_delete") == 0) {
+        pattern_delete(st, atoi(val) - 1);
     } else if (strcmp(key, "clear") == 0) {
         /*
          * CLEAR MEANS EMPTY, NOT "LOAD THE DEMO".
@@ -3793,7 +3887,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         const char *c = p;
         for (int i = 0; i < 25 && c; i++) { c = strchr(c, '|'); if (c) c++; }
         int k = 0;
-        while (c && *c && *c != '"' && k < STK_MAX_CHORDS) {
+        while (c && *c && *c != '"' && *c != '@' && *c != '#' && k < STK_MAX_CHORDS) {
             int r, sh, iv, ln, of, str_, cv, cg, mu, rh, tr, co, sy;
             if (sscanf(c, "%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
                        &r, &sh, &iv, &ln, &of, &str_, &cv, &cg, &mu, &rh, &tr,
@@ -3824,6 +3918,66 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         st->armed_id = 0;
         st->pend_n = 0;
         st->cut_pending = 1;
+
+        /*
+         * THE PATTERNS, if this blob carries any. Cleared first: restoring a
+         * state means BECOMING it, and leaving the previous set's patterns
+         * behind would be a preset that half-applied -- the failure this whole
+         * serialiser is written against.
+         */
+        for (int i = 0; i < STK_PATTERNS; i++) st->pat[i].used = 0;
+        st->pat_cur = -1;
+        for (const char *g = strchr(p, '@'); g; g = strchr(g + 1, '@')) {
+            int slot, pk, ps, pr, pb, pg, pc;
+            if (sscanf(g + 1, "%d.%d.%d.%d.%d.%d.%d:", &slot, &pk, &ps, &pr,
+                       &pb, &pg, &pc) != 7) continue;
+            if (slot < 1 || slot > STK_PATTERNS) continue;
+            stk_pattern_t *P = &st->pat[slot - 1];
+            memset(P, 0, sizeof *P);
+            P->prog.key   = clampi(pk, 0, 11);
+            P->prog.scale = clampi(ps, 0, NUM_SCALES - 1);
+            P->prog.rate  = clampi(pr, 0, NUM_RATES - 1);
+            P->bars       = clampi(pb, 1, 16);
+            P->grouping   = clampi(pg, 0, NUM_GROUPINGS - 1);
+            const char *q = strchr(g, ':');
+            int m = 0;
+            while (q && *++q && *q != '@' && *q != '"' && m < STK_MAX_CHORDS) {
+                int r, sh, iv, ln, of, str_, cv, cg, mu, rh, tr, co, sy;
+                if (sscanf(q, "%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
+                           &r, &sh, &iv, &ln, &of, &str_, &cv, &cg, &mu, &rh,
+                           &tr, &co, &sy) == 13) {
+                    stk_chord_t *z = &P->prog.ch[m];
+                    z->root   = clampi(r, 0, 127);
+                    z->shape  = clampi(sh, 0, NUM_SHAPES - 1);
+                    z->inv    = clampi(iv, -3, 3);
+                    z->len    = clampi(ln, 1, STK_MAX_LEN);
+                    z->off    = clampi(of, 0, 15);
+                    z->strum  = clampi(str_, 0, 100);
+                    z->vel    = clampi(cv, -63, 63);
+                    z->gate   = clampi(cg, -50, 50);
+                    z->mute   = mu ? 1 : 0;
+                    z->rhythm = clampi(rh, 0, NUM_RHYTHMS - 1);
+                    z->trans  = clampi(tr, -12, 12);
+                    z->colour = clampi(co, 0, NUM_COLOURS - 1);
+                    z->styled = sy ? 1 : 0;
+                    m++;
+                }
+                const char *comma = strchr(q, ',');
+                const char *nextp = strchr(q, '@');
+                if (!comma || (nextp && comma > nextp)) break;
+                q = comma;
+            }
+            P->prog.count = m > 0 ? m : clampi(pc, 1, STK_MAX_CHORDS);
+            P->used = m > 0;
+        }
+        const char *cm = strchr(p, '#');
+        if (cm) {
+            int cur = atoi(cm + 1) - 1;
+            /* Only if it points at a slot that actually holds something: a
+             * lamp on an empty button is the one thing the eye cannot check. */
+            if (cur >= 0 && cur < STK_PATTERNS && st->pat[cur].used)
+                st->pat_cur = cur;
+        }
     }
 }
 
@@ -4104,6 +4258,23 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
         || strcmp(key, "play") == 0 || strcmp(key, "insert") == 0
         || strcmp(key, "remove") == 0 || strcmp(key, "duplicate") == 0)
         return snprintf(buf, buf_len, "off");
+    if (strcmp(key, "patterns") == 0) {
+        /*
+         * ONE READ DRAWS ALL SIXTEEN. A mask of which slots hold something,
+         * and which one this buffer came from -- the two facts a button needs
+         * to pick its colour, in one value, because the staff already spends
+         * its read budget on `prog`.
+         *
+         * Both 1-BASED on the wire, as `sel` is: the surfaces talk about
+         * "pattern 3", and an off-by-one between two UIs and a DSP is a bug
+         * nobody can see until it is on hardware.
+         */
+        unsigned mask = 0;
+        for (int i = 0; i < STK_PATTERNS; i++)
+            if (((const stk_t *)st)->pat[i].used) mask |= 1u << i;
+        return snprintf(buf, buf_len, "%04x|%d", mask,
+                        ((const stk_t *)st)->pat_cur + 1);
+    }
     if (strcmp(key, "status") == 0) {
         /*
          * ARMED IS A STATE OF THE MODULE, NOT A GUESS BY A SURFACE.
@@ -4153,6 +4324,35 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
                            q->off, q->strum, q->vel, q->gate,
                            q->mute, q->rhythm, q->trans, q->colour, q->styled);
         }
+        /*
+         * THE PATTERNS RIDE ALONG, after the buffer and behind a marker.
+         *
+         * Appended rather than versioned into the head so a blob written
+         * before patterns existed still loads: the reader below walks chords
+         * until it meets '@' or the closing quote, and an old blob simply has
+         * neither section. The separators are deliberately NOT ';' -- that is
+         * the chord separator, and a pattern containing one would send the
+         * chord walk off into the pattern list.
+         */
+        for (int i = 0; i < STK_PATTERNS && at < buf_len - 64; i++) {
+            if (!st->pat[i].used) continue;
+            const stk_prog_t *g = &st->pat[i].prog;
+            at += snprintf(buf + at, buf_len - at, "@%d.%d.%d.%d.%d.%d.%d:",
+                           i + 1, g->key, g->scale, g->rate,
+                           st->pat[i].bars, st->pat[i].grouping, g->count);
+            for (int k = 0; k < g->count && at < buf_len - 48; k++) {
+                const stk_chord_t *q = &g->ch[k];
+                at += snprintf(buf + at, buf_len - at,
+                               "%s%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
+                               k ? "," : "", q->root, q->shape, q->inv, q->len,
+                               q->off, q->strum, q->vel, q->gate,
+                               q->mute, q->rhythm, q->trans, q->colour, q->styled);
+            }
+        }
+        /* And WHICH slot this buffer came from -- otherwise a restored set
+         * has its patterns but a dark lamp, and the button that is actually
+         * loaded looks like the ones that are not. */
+        at += snprintf(buf + at, buf_len - at, "#%d", st->pat_cur + 1);
         at += snprintf(buf + at, buf_len - at, "\"}");
         return at;
     }
