@@ -94,7 +94,12 @@
         "",
         "Top row: a knob's",
         "NAME until you touch",
-        "it, then its VALUE."
+        "it, then its VALUE.",
+        "",
+        "The chord NAMES run",
+        "along the foot of the",
+        "staff; the selected",
+        "one is underlined."
       ]
     },
     {
@@ -111,12 +116,21 @@
         "      progression",
         "      loops even",
         "      when stopped",
-        "",
         "Pads pick a chord",
         "by pitch class: C",
         "is chord 1, C# is",
         "chord 2, and it",
-        "sounds while held."
+        "sounds while held.",
+        "",
+        "A CLIP ON THIS TRACK",
+        "does the same -- its",
+        "notes pick chords as",
+        "they play. Notes this",
+        "module is itself",
+        "sounding are ignored,",
+        "so it cannot drive",
+        "itself; anything else",
+        "on the track can."
       ]
     },
     {
@@ -187,26 +201,32 @@
     {
       "title": "Stamp Clip",
       "lines": [
-        "Writes it back.",
+        "Writes it back --",
+        "by ARMING, not by",
+        "writing.",
         "",
-        "rec arm (default):",
-        " arm record on the",
-        " track, then Stamp.",
-        " The progression",
-        " restarts at chord",
-        " 1 and Move records",
-        " it. Move owns the",
-        " write, so nothing",
-        " can be lost.",
+        "Press Stamp: the",
+        " staff blinks a mark",
+        " and the panel says",
+        " ARMED. Run is parked",
+        " so nothing sounds",
+        " before the downbeat.",
         "",
-        "write file:",
-        " writes Song.abl",
-        " directly. Instant,",
-        " but Move holds the",
-        " set in memory and",
-        " may save over it.",
-        " Use it with the",
-        " set closed."
+        "Then REC + PLAY on",
+        " Move. It begins on",
+        " Move's next downbeat,",
+        " plays exactly ONE",
+        " lap, and stops -- so",
+        " nothing doubles the",
+        " clip.",
+        "",
+        "Press Stamp again to",
+        " cancel. Run comes",
+        " back either way.",
+        "",
+        "Move owns the write,",
+        " so nothing it records",
+        " can be lost."
       ]
     }
   ]

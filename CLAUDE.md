@@ -98,6 +98,19 @@ gets wrong:
   back and returns when that take's transport stops. Pressing the same control
   while armed CANCELS, because a state whose only exit was Move's stop button
   is a state the surface that entered it could not leave.
+- **THE MODULE MUST NOT BE DRIVEN BY ITS OWN OUTPUT.** An incoming note is a
+  chord SELECTOR by pitch class -- that is the feature, so a pad, a keyboard
+  and a clip can all drive it. But its output goes to the track and the track
+  comes back: as Move's echo, and again as a clip once you have stamped one. An
+  Am7 contains a C, C is pitch class 0, pitch class 0 is chord 1, so the chords
+  it played were selecting chords -- and a selection is armed with HOLD, whose
+  voices never expire, so the symptom was "the chord never moves on" rather
+  than "it jumps". Filtered on the SOUNDING VOICES, not on "is the transport
+  running": a driver clip still drives it and a keyboard still plays it, only
+  its own tail is ignored. Underneath it, `held` was ONE pitch class cleared
+  only on an exact match, so two notes held together or one lost note-off
+  stranded the selection on for the session; it is a mask now.
+  `tests/test_stacks_own_tail.sh` feeds every emitted note straight back in.
 - **THE FIRST CLOCK AFTER START IS THE DOWNBEAT, and counting it made every
   chord early.** `pulse` was zeroed on 0xFA and incremented by every 0xF8, so
   it read 1 at the downbeat and the module fired a clock ahead of Move forever
