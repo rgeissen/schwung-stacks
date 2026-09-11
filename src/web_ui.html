@@ -1312,8 +1312,19 @@ function patternControl(){
     var up = function(){
       clearTimeout(t);
       if (patDel || held) return;
+      /*
+       * A TAP ONLY EVER RECALLS, and an empty slot has nothing to recall.
+       *
+       * This used to store into an empty slot on a tap, on the theory that an
+       * empty slot has one obvious meaning. It does not: a brush against one
+       * then captured the buffer and lit it, so the slot you meant to leave
+       * empty was suddenly "a pattern" -- and the MOVE did nothing in the same
+       * situation, because the module ignores a recall of an unused slot. Two
+       * surfaces, two answers, for the same tap on the same slot.
+       *
+       * One gesture, one meaning, both surfaces: tap recalls, hold stores.
+       */
       if (filled) set("pat_recall", n);
-      else set("pat_store", n);      /* an empty slot has one obvious meaning */
     };
     b.onpointerup = up;
     b.onpointercancel = function(){ clearTimeout(t); };

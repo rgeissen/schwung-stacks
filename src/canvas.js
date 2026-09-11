@@ -1858,10 +1858,14 @@ globalThis.canvas_overlay = {
                         if (held >= LONG_PRESS_MS) {
                             ctx.setParam("pat_store", String(n));
                             say(ctx, "PATTERN " + n + " STORED");
-                        } else {
+                        } else if ((S.pats >> (n - 1)) & 1) {
                             ctx.setParam("pat_recall", String(n));
                             say(ctx, "PATTERN " + n);
                             refreshBank(ctx);
+                        } else {
+                            /* Nothing to recall. Say what WOULD fill it rather
+                             * than leaving a press that looks ignored. */
+                            say(ctx, "PATTERN " + n + " EMPTY - HOLD TO STORE");
                         }
                         refresh(ctx);
                     }

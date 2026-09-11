@@ -247,6 +247,31 @@ if (worstBack > 0.05) {
 process.exit(0);
 JS
 
+# --- one gesture, one meaning, on both surfaces ---------------------------
+#
+# A TAP ONLY EVER RECALLS a pattern. The panel used to STORE into an empty slot
+# on a tap, on the theory that an empty slot has one obvious meaning -- it does
+# not: a brush against one captured the buffer and lit it, while the Move did
+# nothing in the same situation (the module ignores a recall of an unused
+# slot). Two surfaces, two answers, same tap.
+node - "$PANEL" <<'JS' || fail=1
+const fs = require("fs");
+const src = fs.readFileSync(process.argv[2], "utf8");
+const m = src.match(/var up = function\(\)\{[\s\S]*?\n    \};/);
+if (!m) { console.log("FAIL: web_ui.html: the pattern tap handler could not be found"); process.exit(1); }
+if (/pat_store/.test(m[0])) {
+    console.log("FAIL: web_ui.html: a TAP can store again -- an empty slot claims the buffer");
+    process.exit(1);
+}
+if (!/pat_recall/.test(m[0])) {
+    console.log("FAIL: web_ui.html: a tap no longer recalls anything");
+    process.exit(1);
+}
+process.exit(0);
+JS
+grep -q 'EMPTY - HOLD TO STORE' "$CANVAS" \
+  || note "canvas.js: a tap on an empty slot says nothing -- the press looks ignored"
+
 # --- ARMED is published, not remembered -----------------------------------
 #
 # Rec-arm stamping waits for Move's downbeat, so between the press and the
