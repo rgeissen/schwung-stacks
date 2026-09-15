@@ -132,7 +132,7 @@ DESC = {
 
  "read":      "Reads the clip playing on this track and names its chords, so you can edit something you already recorded.",
  "read_mode": "Whether reading replaces the progression or appends to it, so one phrase can be built from several clips.",
- "stamp":     "Writes the progression back to the clip. Under Rec arm it plays exactly one lap for Move to record.",
+ "stamp":     "Arms one lap for Move to record: press Back, then Record on Move, and it plays the progression once on Move's downbeat.",
  "clear":     "Empties the buffer to a single rest, in your Key and Octave Default &mdash; not to a demo progression.",
  "lanes":     "Which grid lines the staff draws: only the notes of the selected scale, or all seven letter names.",
  "preview":   "Whether editing a chord auditions it, and whether the progression keeps looping while the transport is stopped.",
@@ -299,8 +299,8 @@ NOTES = [
     ("The banks are the levels.",
      "Every bank holds the same knobs in the same order as the knob page of the same name, so what "
      "you learn on one surface transfers to the other. "
-     "<code>tests/test_stacks_shapes.sh</code> fails on any divergence. Two keys never appear: "
-     "<code>grid</code> is the door you came through and <code>sel</code> is the jog, so neither spends a knob."),
+     "<code>tests/test_stacks_shapes.sh</code> fails on any divergence. One key never appears: "
+     "<code>sel</code> is the jog, so it spends no knob."),
     ("Grouping leads; Colour arranges; Shape chooses.",
      "Three axes, and none can express another. <em>Chord Shape</em> picks the chord. "
      "<em>Colour</em> arranges that one chord &mdash; close, dropped, shell, quartal. "
@@ -310,16 +310,14 @@ NOTES = [
      "A tap duplicates the progression, a HOLD halftimes it, and Mute+press double-times it. "
      "Doubling a chord's length IS halftime, so the third gesture has to be the inverse or two of "
      "the three do the same thing &mdash; a test asserts they round-trip exactly. The long press "
-     "fires on RELEASE because <code>tick</code> has no <code>setParam</code>; it can only SEE the "
-     "threshold pass, which is why the screen tells you what the release will do while you are "
-     "still holding."),
-    ("Shift belongs to the host on these buttons.",
-     "<em>Shift&thinsp;+&thinsp;Copy</em> and <em>Shift&thinsp;+&thinsp;Delete</em> are Schwung's own "
-     "snapshot and recall, and the shim withholds a shift-held press from a claimed CC entirely "
-     "&mdash; the module gets the BARE buttons only. So the second gesture on Copy and Undo is "
-     "<strong>Mute</strong>, which IS forwarded. The jog is unaffected: its claim is a different "
-     "mechanism, so <em>Shift&thinsp;+&thinsp;Jog</em> and <em>Shift&thinsp;+&thinsp;Click</em> "
-     "work as written."),
+     "fires on RELEASE: <code>tick</code> only watches the threshold pass and draws it, which is "
+     "why the screen tells you what the release will do while you are still holding."),
+    ("Shift arrives, and Mute still works.",
+     "As an overtake tool every button is Stacks's, Shift included &mdash; it comes in on the wire "
+     "as CC&nbsp;49, and the tool reads it from there rather than asking the shim, whose own Shift "
+     "tracking does not work in this mode. <strong>Mute</strong> stays as the second modifier on "
+     "Copy and Undo: it was the only one that reached the module when Stacks was a chain "
+     "component, and a hand that learned it keeps it."),
     ("A rhythm is a BAR; “hold” is not.",
      "Every figure covers one bar and repeats across the chord &mdash; a clave over a two-bar chord "
      "is two claves, which is what a clave is. <em>hold</em> is the degenerate mask, one hit at "
@@ -429,9 +427,10 @@ NOTES = [
      "you want a variation of, then change its Root or Shape. To add several at once, turn "
      "<em>Chords</em> on MAIN &mdash; growing the count copies the last one."),
     ("The playhead costs no reads.",
-     "<code>draw</code> and <code>tick</code> are handed a context with <code>getParam</code> "
-     "removed, so a position cannot be polled. It is extrapolated instead, from the transport and "
-     "tempo in shared memory and the step length the module publishes, re-anchored on every read from the position the module reports. "
+     "<code>draw</code> and <code>tick</code> read nothing &mdash; a read is most of a frame &mdash; "
+     "so a position is not polled per frame. It is extrapolated instead, from the transport and "
+     "tempo in shared memory and the step length the module publishes, re-anchored from the position "
+     "the module reports four times a second. "
      "It disappears when the transport stops &mdash; a frozen head and a "
      "stopped transport look identical, and one of them is a lie."),
     ("Touch a knob and it takes the whole row.",
