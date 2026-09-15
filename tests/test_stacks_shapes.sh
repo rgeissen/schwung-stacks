@@ -203,25 +203,34 @@ grep -q 'setParam(key, "~"' "$CANVAS" || bad "canvas.js does not send relative e
 grep -q "val\[0\] == '~'" "$C" || bad "stacks.c does not accept a ~N relative write"
 note "relative enum writes travel in the value, not the key"
 
-# 9d. SHIFT IS READ, NOT LISTENED FOR. CC 49 is not in the shim's forward list
-#     (14, 3, 51, 40-43, 71-78, 88, plus claimed), so a `d1 === 49` branch in an
-#     overlay is unreachable code that looks implemented -- which is precisely
-#     how Shift+Jog came to silently do nothing twice.
-# Comments stripped first: this file EXPLAINS why CC 49 is not listened for,
-# and a substring search over prose fails on the explanation of its own rule --
-# the same way the rand() check did.
+# 9d. SHIFT HAS TWO SOURCES, AND THE SURFACE DECIDES WHICH.
+#     Under the chain's canvas runtime CC 49 is not in the shim's forward list
+#     (14, 3, 51, 40-43, 71-78, 88, plus claimed), so a `d1 === 49` branch is
+#     unreachable code that looks implemented -- which is precisely how
+#     Shift+Jog came to silently do nothing twice; Shift is READ from
+#     shadow_get_shift_held(). As an OVERTAKE tool the opposite holds, measured
+#     on the device: CC 49 IS forwarded, and the shim's own tracking is
+#     documented as not working in that mode -- so it is taken from the wire.
+#     Both must exist, and the CC branch must be the recorder for S.overtake,
+#     not a gesture handler of its own.
+grep -q 'shadow_get_shift_held' "$CANVAS" \
+    || bad "canvas.js does not read Shift from the shim binding (chain surface)"
+grep -q 'd1 === 49) { S.shiftCC = d2 > 0' "$CANVAS" \
+    || bad "canvas.js does not record CC 49 into S.shiftCC (overtake surface)"
+grep -q 'if (S.overtake) return !!S.shiftCC' "$CANVAS" \
+    || bad "shiftHeld() does not prefer the wire under S.overtake"
 if python3 -c "
 import re,sys
 src=open('$CANVAS').read()
 code=re.sub(r'/\*.*?\*/','',src,flags=re.S)
 code=re.sub(r'//[^\n]*','',code)
-sys.exit(0 if re.search(r'd1 === (SHIFT_CC|49)\b', code) else 1)
+# one CC-49 site only: the recorder. A second is a gesture waiting on a CC
+# that half the surfaces never send.
+sys.exit(0 if len(re.findall(r'd1 === (SHIFT_CC|49)\b', code)) > 1 else 1)
 "; then
-    bad "canvas.js waits for CC 49, which the shim never forwards"
+    bad "canvas.js has a second CC 49 site -- a gesture on a CC the chain never forwards"
 fi
-grep -q 'shadow_get_shift_held' "$CANVAS" \
-    || bad "canvas.js does not read Shift from the shim binding"
-note "Shift comes from shadow_get_shift_held(), not from a CC"
+note "Shift: shadow_get_shift_held() on the chain, CC 49 from the wire under an overtake"
 
 # 9f. AN UNBOUND KNOB MUST BE DARK. Colour 0 is reserved for "nothing is bound
 #     here" (param_pages/knob_leds.mjs), and the takeover has to drive the rings

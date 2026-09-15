@@ -850,6 +850,17 @@ const S = {
     cursor: 0,
     shift: false,    /* Mute held -- the bank modifier */
     /*
+     * AS AN OVERTAKE TOOL (ui.js sets this before onOpen) the host contract
+     * changes in three places, and each is a guard below rather than a fork:
+     * the pads and rings are OURS by definition, so there is no block to take
+     * and nothing to give back; Move cannot paint pads underneath us, so there
+     * is nothing to reconcile; and Shift ARRIVES as CC 49 -- the shim's own
+     * tracking is documented as not working in overtake mode, so it is read
+     * from the wire (shiftCC) rather than asked for.
+     */
+    overtake: false,
+    shiftCC: false,
+    /*
      * Opens on CHORD -- the bank you came in to use. BY NAME, not by index:
      * it was 1, and inserting START as the second bank silently moved the
      * landing to a different bank. An index into a reorderable list is a
@@ -913,6 +924,7 @@ function delta(v) { return v < 64 ? v : v - 128; }
  * a throw here retires the whole overlay for the session.
  */
 function shiftHeld() {
+    if (S.overtake) return !!S.shiftCC;
     try {
         return typeof shadow_get_shift_held === "function"
             && shadow_get_shift_held() !== 0;
@@ -1617,6 +1629,10 @@ globalThis.canvas_overlay = {
     widgetKind: "custom:stkstaff",
 
     onOpen(ctx) {
+        /* ui.js raises this before opening; the chain's canvas runtime never
+         * does, and every guard on it falls through to the chain behaviour. */
+        S.overtake = globalThis.STACKS_OVERTAKE === true;
+        S.shiftCC = false;
         S.bank = CHORD_BANK;
         S.padPage = 0;
         lastLed.fill(-1);   /* the shim just replayed Move's rings; re-emit all */
@@ -1624,8 +1640,9 @@ globalThis.canvas_overlay = {
         S.parmPage = 0;
         S.rowScroll = [0, 0, 0];
         for (const r of lastParamPad) r.fill(-1);
-        /* Take the pads. Global switch -- released in onClose, always. */
-        if (typeof host_pad_block === "function") host_pad_block(1);
+        /* Take the pads. Global switch -- released in onClose, always.
+         * An overtake owns them already; the switch is the CHAIN's. */
+        if (!S.overtake && typeof host_pad_block === "function") host_pad_block(1);
         refresh(ctx);
         refreshBank(ctx);
         /* A stamp armed from the browser is already waiting when this opens,
@@ -1698,6 +1715,24 @@ globalThis.canvas_overlay = {
      * when its value changes, so a knob we left dark stays dark on its own
      * track until something moves it -- the same bug exitParamPages documents.
      */
+    /*
+     * RESUME, after the host parked us (suspend_keeps_js). While we were in
+     * the background the host cleared every LED and something else drew the
+     * screen, so nothing our delta-caches believe is true any more; the
+     * selection, bank and page are still ours and are kept. One read of
+     * `prog` and one bank refresh, then the next tick repaints from scratch.
+     */
+    onResume(ctx) {
+        lastLed.fill(-1);
+        lastPad.fill(-1);
+        for (const r of lastParamPad) r.fill(-1);
+        S.shiftCC = false;
+        S.holding = false;
+        refresh(ctx);
+        refreshBank(ctx);
+        S.bankPollMs = 0;
+    },
+
     onClose(ctx) {
         /*
          * NEVER LEAVE A HOLD BEHIND. `play` is a momentary -- on at the press,
@@ -1733,8 +1768,10 @@ globalThis.canvas_overlay = {
          * it releases the block, which is the only place that runs on EVERY
          * exit path. Releasing here just brings that forward.
          */
-        if (typeof host_pad_block === "function") host_pad_block(0);
-        if (typeof shadow_restore_knob_leds === "function") shadow_restore_knob_leds();
+        if (!S.overtake) {
+            if (typeof host_pad_block === "function") host_pad_block(0);
+            if (typeof shadow_restore_knob_leds === "function") shadow_restore_knob_leds();
+        }
     },
 
     draw(ctx) {
@@ -1785,14 +1822,15 @@ globalThis.canvas_overlay = {
          * SHOWN, or this would fight the very release it depends on -- `tick`
          * is gated on the view, and the view outlives the screen.
          */
-        if (typeof host_pad_block === "function"
+        if (!S.overtake && typeof host_pad_block === "function"
             && (typeof shadow_get_display_mode !== "function"
                 || shadow_get_display_mode() === 1))
             host_pad_block(1);
 
         /* Anything Move has painted over invalidates our cache for those pads,
-         * so the two updates below reassert them -- see reconcilePadLeds. */
-        reconcilePadLeds(now);
+         * so the two updates below reassert them -- see reconcilePadLeds.
+         * Under an overtake Move's pad writes never reach the hardware. */
+        if (!S.overtake) reconcilePadLeds(now);
         /* The pad row follows the playhead, so it updates per frame like the
          * head does -- and costs nothing when nothing moved. */
         updatePadLeds();
@@ -1804,6 +1842,10 @@ globalThis.canvas_overlay = {
         const d = (payload && payload.data) || [];
         if (d.length < 3) return;
         const status = d[0] & 0xF0, d1 = d[1], d2 = d[2];
+
+        /* SHIFT, on the wire. Forwarded to an overtake (and to nothing else --
+         * see shiftHeld). Recorded and consumed: it is a modifier, not a key. */
+        if (status === 0xB0 && d1 === 49) { S.shiftCC = d2 > 0; return; }
 
         /* KNOB TOUCH is a NOTE (0-9), not a CC. It is what switches the top row
          * from meanings to values, so it has to be tracked before the CC
@@ -2159,10 +2201,14 @@ globalThis.canvas_overlay = {
                 ctx.setParam(key, "on");
                 if (key === "stamp") {
                     S.status = "armed";
-                    /* It cannot press Move's Record itself: the shim claims
-                     * CC 118 for the sampler. So the toast names the two
-                     * buttons, in the order they are pressed. */
-                    say(ctx, "ARMED: REC + PLAY");
+                    /* It cannot press Move's Record itself, and while this
+                     * overtake is on screen the shim swallows the Record
+                     * button even though it is declared in button_passthrough
+                     * (measured 2026-09-15). So the toast names the flow that
+                     * works: park with Back, then Record on Move -- the DSP
+                     * keeps ticking while parked and plays its lap on Move's
+                     * Start. */
+                    say(ctx, "ARMED: BACK, REC ON MOVE");
                 }
                 refresh(ctx);
                 refreshBank(ctx);

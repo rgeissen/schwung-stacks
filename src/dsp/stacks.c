@@ -4312,11 +4312,14 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
         return snprintf(buf, buf_len, "%s", st->read_mode ? "append" : "replace");
     if (strcmp(key, "stamp_mode") == 0)
         return snprintf(buf, buf_len, "%s", st->stamp_mode ? "write file" : "rec arm");
-    /* Write-only triggers read back as off, so a click is never sticky. */
-    if (strcmp(key, "read") == 0 || strcmp(key, "stamp") == 0 || strcmp(key, "clear") == 0
-        || strcmp(key, "roll_vel") == 0 || strcmp(key, "roll_time") == 0
-        || strcmp(key, "play") == 0 || strcmp(key, "insert") == 0
-        || strcmp(key, "remove") == 0 || strcmp(key, "duplicate") == 0)
+    /*
+     * Write-only triggers read back as off, so a click is never sticky. ONE
+     * table -- is_trigger_key's -- because this was a hand-kept copy that
+     * had fallen five keys behind it, and a bank refresh reading `degree`
+     * got -1 for it: an errored read per second in the host's param log,
+     * for a key that exists.
+     */
+    if (is_trigger_key(key))
         return snprintf(buf, buf_len, "off");
     if (strcmp(key, "patterns") == 0) {
         /*
@@ -4472,14 +4475,6 @@ midi_fx_api_v1_t* move_midi_fx_init(const host_api_v1_t *host) {
 
 static void tool_inject(stk_t *st, uint8_t out[][3], int lens[], int n) {
     if (!g_host || !g_host->midi_inject_to_move) return;
-    /* SPIKE TRACE (phase 0): the overtake inject ring drains silently, so
-     * this is the only evidence a packet was produced. Removed in phase 1. */
-    if (n > 0 && g_host->log) {
-        char m[96];
-        snprintf(m, sizeof m, "stacks tool: inject %d pkts, first %02x %02x %02x ch%d",
-                 n, out[0][0], out[0][1], out[0][2], st->track);
-        g_host->log(m);
-    }
     uint8_t ch = (uint8_t)((st->track - 1) & 0x0F);
     for (int i = 0; i < n; i++) {
         if (lens[i] < 2) continue;
@@ -4527,22 +4522,12 @@ static int tool_get_error(void *instance, char *buf, int buf_len) {
     return 0;
 }
 
-static void tool_set_param(void *instance, const char *key, const char *val) {
-    /* SPIKE TRACE (phase 0). Removed in phase 1. */
-    if (g_host && g_host->log && key && val) {
-        char m[160];
-        snprintf(m, sizeof m, "stacks tool: set %s=%.60s", key, val);
-        g_host->log(m);
-    }
-    stk_set_param(instance, key, val);
-}
-
 static plugin_api_v2_t g_tool_api = {
     .api_version      = MOVE_PLUGIN_API_VERSION_2,
     .create_instance  = stk_create,
     .destroy_instance = stk_destroy,
     .on_midi          = tool_on_midi,
-    .set_param        = tool_set_param,
+    .set_param        = stk_set_param,
     .get_param        = stk_get_param,
     .get_error        = tool_get_error,
     .render_block     = tool_render_block,

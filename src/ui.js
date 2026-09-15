@@ -1,121 +1,121 @@
 /*
- * stacks/ui.js -- PHASE 0 SPIKE. Not the module's UI.
+ * stacks/ui.js -- the overtake tool's UI. canvas.js, under the host's
+ * overtake lifecycle.
  *
- * This exists to prove the overtake path on the device before a line of
- * canvas.js is ported (docs/plans/2026-09-15-overtake-port-design.md, phase 0):
+ * canvas.js is the whole surface -- the roll, the bank row, the pads, the
+ * rings, the gestures -- written against a `ctx` the chain's canvas runtime
+ * used to hand it. This file IS that ctx, built from the overtake draw
+ * globals, plus the lifecycle the runtime used to run:
  *
- *   - the Tools menu lists Stacks and loads dsp.so as the overtake DSP;
- *   - Move's cable-0 clock reaches the DSP (the bar counter below moves);
- *   - a chord reaches a Move track through midi_inject_to_move;
- *   - Record and Play PASS THROUGH (button_passthrough) so Move records a lap
- *     while this screen is up.
+ *   host                       canvas_overlay
+ *   init()                     onOpen(ctx)     once per load, after the
+ *                                              host's progressive LED clear
+ *   tick()                     tick(ctx) every frame, draw(ctx) at DRAW_MS,
+ *                              onPoll(ctx) at POLL_MS -- the reads the canvas
+ *                              runtime stripped from draw are ours to make
+ *   onMidiMessageInternal(d)   onMidi(ctx, {data: d})
+ *   onResume()                 onResume(ctx)   the host cleared the hardware
+ *   onUnload()                 onClose(ctx), then leave nothing sounding
  *
- * Four controls, nothing else:
- *   Jog click    load a library progression if the buffer is empty, then
- *                toggle the module's own loop (preview) -- hear it on the track
- *   Knob 1       track 1-4 (the channel the output addresses)
- *   Knob 2       the library progression
- *   Play         Move's transport, passed through; the DSP follows its clock
- *   Record       Move's, passed through
- *   Shift+Jog    Stamp: arm one lap for Move to record (press Record on Move)
- *   Back         suspend (the DSP keeps ticking); Shift+Back exits
+ * PARKED. Back suspends this tool (suspend_keeps_js): the DSP keeps ticking
+ * -- an armed take goes on waiting for Move's Start -- and tick() keeps being
+ * called with the draw and LED globals swapped for no-ops and
+ * globalThis.overtakeParked raised. Nothing is drawn or read while parked:
+ * the param mailbox does not answer a parked module (phase 0 measured the
+ * give-ups), and a picture nobody can see is not worth the reads.
+ *
+ * The Back button itself never reaches us -- the host takes it for suspend
+ * (Shift+Back for exit, Shift+Vol+Click as the escape). Everything else on
+ * the surface is ours, Shift included: it arrives as CC 49 here, which is why
+ * canvas.js reads it from the wire under S.overtake.
  */
 
-import { decodeDelta } from
-    '/data/UserData/schwung/shared/input_filter.mjs';
+import "/data/UserData/schwung/modules/tools/stacks/canvas.js";
 
-const CC_SHIFT = 49, CC_BACK = 51, CC_JOG_CLICK = 3, CC_KNOB1 = 71, CC_KNOB2 = 72;
+const DRAW_MS = 33;      /* ~30 fps; a full redraw is ~1.7 ms of a 2.9 ms tick */
+const POLL_MS = 250;     /* the canvas runtime's CANVAS_POLL_MS, kept */
 
-let shiftHeld = 0;
-let dirty = true;
+const ov = globalThis.canvas_overlay;
+
+/*
+ * The ctx. Every method reaches for the GLOBAL by name at call time rather
+ * than capturing it, because the host swaps those globals for no-ops while we
+ * are parked and swaps them back on resume -- a captured reference would
+ * draw on a screen that is not ours.
+ */
+const ctx = {
+    width: 128,
+    height: 64,
+    clear() { clear_screen(); },
+    setPixel(x, y, v) { set_pixel(x, y, v === undefined ? 1 : v); },
+    fillRect(x, y, w, h, v) { fill_rect(x, y, w, h, v === undefined ? 1 : v); },
+    drawRect(x, y, w, h, v) { draw_rect(x, y, w, h, v === undefined ? 1 : v); },
+    drawLine(x0, y0, x1, y1, v) { draw_line(x0, y0, x1, y1, v === undefined ? 1 : v); },
+    print(x, y, s, size) { print(x, y, String(s), size || 1); },
+    now() { return Date.now(); },
+    random() { return Math.random(); },
+    getParam(k) {
+        return typeof host_module_get_param === "function" ? host_module_get_param(k) : null;
+    },
+    setParam(k, v) {
+        if (typeof host_module_set_param === "function") host_module_set_param(k, String(v));
+    },
+};
+
+let lastDraw = 0;
 let lastPoll = 0;
-let view = { hasChord: false, count: 0, running: 0, bar: 0, status: "idle", track: "1", preview: "off", prog: "" };
+let open = false;
 
-function log(m) { if (typeof shadow_log === "function") shadow_log("stacks ui: " + m); }
-function setP(k, v) {
-    log("set " + k + "=" + v + " (fn=" + typeof host_module_set_param + ")");
-    if (typeof host_module_set_param === "function") host_module_set_param(k, String(v));
-}
-function getP(k) { return typeof host_module_get_param === "function" ? host_module_get_param(k) : null; }
-
-/* `prog` is v13|count|sel|playing|stepUnits|mask|key|clipUnits|running|stepBeats|bpm|posUnits|grouping|... */
-function poll() {
-    const p = String(getP("prog") || "");
-    const h = p.split("|");
-    view.count   = parseInt(h[1], 10) || 0;
-    /* chords are `NAME,ROOT,...;` after the 13 header fields; a rest is "REST" */
-    view.hasChord = h.slice(13).join("|").split(";").some(function (c) {
-        var name = c.split(",")[0]; return name && name !== "REST";
-    });
-    view.running = h[8] === "1" ? 1 : 0;
-    const stepUnits = parseInt(h[4], 10) || 8;
-    const pos = parseInt(h[11], 10) || 0;
-    view.bar = Math.floor(pos / stepUnits) + 1;
-    view.status  = String(getP("status") || "idle");
-    view.track   = String(getP("track") || "1");
-    view.preview = String(getP("preview") || "off");
-    view.prog    = String(getP("progression") || "");
-    dirty = true;
-}
-
-function draw() {
-    clear_screen();
-    print(0, 0, "STACKS  tool spike", 1);
-    fill_rect(0, 9, 128, 1, 1);
-    print(0, 14, "track " + view.track + "   " + view.prog.slice(0, 14), 1);
-    print(0, 24, "chords " + view.count + "   loop " + view.preview, 1);
-    print(0, 34, (view.running ? "RUNNING  bar " + view.bar : "stopped"), 1);
-    print(0, 44, "status " + view.status, 1);
-    print(0, 56, "Clk=loop K1=trk S+Clk=stamp", 1);
-    dirty = false;
-}
+function parked() { return globalThis.overtakeParked === true; }
 
 globalThis.init = function () {
-    shiftHeld = 0;
-    poll();
-    draw();
+    globalThis.STACKS_OVERTAKE = true;
+    ov.onOpen(ctx);
+    open = true;
+    lastPoll = Date.now();
+    ctx.clear();
+    ov.draw(ctx);
+    lastDraw = Date.now();
 };
 
-globalThis.onResume = function () { dirty = true; };
+globalThis.onResume = function () {
+    ov.onResume(ctx);
+    lastDraw = 0;          /* repaint on the next tick */
+    lastPoll = Date.now();
+};
 
 globalThis.tick = function () {
+    if (!open || parked()) return;
     const now = Date.now();
-    if (now - lastPoll >= 250) { lastPoll = now; poll(); }
-    if (dirty) draw();
-};
-
-globalThis.onUnload = function () {
-    /* Leave nothing sounding: the host synthesises no all-notes-off. */
-    setP("preview", "off");
-    setP("play", "off");
+    ov.tick(ctx);
+    if (now - lastPoll >= POLL_MS) {
+        lastPoll = now;
+        ov.onPoll(ctx);
+    }
+    if (now - lastDraw >= DRAW_MS) {
+        lastDraw = now;
+        ctx.clear();
+        ov.draw(ctx);
+    }
 };
 
 globalThis.onMidiMessageInternal = function (data) {
-    if (!data) return;
-    const status = data[0] | 0, d1 = data[1] | 0, d2 = data[2] | 0;
-    if ((status & 0xF0) === 0xB0) log("cc " + d1 + "=" + d2);
-    if ((status & 0xF0) !== 0xB0) return;
-    if (d1 === CC_SHIFT) { shiftHeld = d2 > 0 ? 1 : 0; return; }
-    if (d1 === CC_BACK) return;                 /* the host's: suspend / exit */
-
-    if (d1 === CC_JOG_CLICK && d2 > 0) {
-        if (shiftHeld) { setP("stamp", "1"); poll(); return; }
-        /* Stacks opens on FOUR EMPTY BARS -- four rests, count 4 -- so
-         * "count === 0" never held and the loop played silence. Empty means
-         * no chord that is not a rest. */
-        if (!view.hasChord) { setP("progression", "Axis"); setP("preview", "loop"); poll(); return; }
-        setP("preview", view.preview === "loop" ? "off" : "loop");
-        poll();
-        return;
-    }
-    if (d1 === CC_KNOB1 || d1 === CC_KNOB2) {
-        const raw = decodeDelta(d2);
-        const step = raw > 0 ? 1 : (raw < 0 ? -1 : 0);
-        if (!step) return;
-        if (d1 === CC_KNOB1) setP("track", Math.max(1, Math.min(4, (parseInt(view.track, 10) || 1) + step)));
-        else setP("progression", "~" + step);   /* an enum walks by a relative step */
-        poll();
-    }
+    if (!open || !data || data.length < 3) return;
+    ov.onMidi(ctx, { data: [data[0] | 0, data[1] | 0, data[2] | 0] });
 };
 
-globalThis.onMidiMessageExternal = function () {};
+globalThis.onMidiMessageExternal = function () {
+    /* A keyboard on cable 2 drives the DSP directly (a chord selector by
+     * pitch class); the picture follows through `prog` on the next poll. */
+};
+
+globalThis.onUnload = function () {
+    open = false;
+    /* onClose releases the hold; these stop the two things that can still be
+     * sounding on their own clock. The DSP's next blocks emit the note-offs
+     * -- packets already injected have reached Move and the host synthesises
+     * no all-notes-off for us. */
+    ov.onClose(ctx);
+    ctx.setParam("preview", "off");
+    ctx.setParam("run", "off");
+};
