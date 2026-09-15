@@ -568,6 +568,13 @@ fetch("module.json").then(function(r){ return r.ok ? r.json() : null; })
     if (caps.genre_progressions && caps.genre_progressions.length){
       GENRE_RUNS = caps.genre_progressions; got = true;
     }
+    /* The declaration itself, for the Tool tab: names, ranges and option
+       lists for every control. On a chain slot getChainParams() answers the
+       same thing and wins if it already has. */
+    if (caps.chain_params && !Object.keys(META).length){
+      caps.chain_params.forEach(function(m){ if (m && m.key) META[m.key] = m; });
+      got = true;
+    }
     if (got){ paneSig = null; render(); }
   })
   .catch(function(){ /* keep both null: show every shape and every preset */ });
@@ -641,7 +648,16 @@ function shapesInFamily(opts){
 
 /* ═══════════════════════════════ bridge ═══════════════════════ */
 var R = window.schwungRemote || null;
-var COMP = (R && R.component) || "midi_fx1";
+/*
+ * THE TOOL TAB. As an overtake tool this panel is framed with component
+ * "tool" and the module's params live under the manager's "overtake_dsp:"
+ * prefix -- reads come from `state` (a flat map the DSP publishes), writes go
+ * to that prefix, and the transport arrives as `rui_play` pushes rather than
+ * as anything a chain component ever published. Framed by a chain slot it is
+ * the component it always was.
+ */
+var TOOL = !!(R && R.component === "tool");
+var COMP = TOOL ? "overtake_dsp" : ((R && R.component) || "midi_fx1");
 var DEMO = !R;
 var vals = {}, META = {};
 
@@ -1896,6 +1912,8 @@ function pollStatus(){
 (function(){
   var fire = function(key){ return function(){ set(key, "on"); }; };
   var byp = document.getElementById("actBypass");
+  /* No chain host, no bypass: a tool is on or it is not loaded. */
+  if (TOOL) byp.hidden = true;
   byp.onclick = function(){
     /* `bypassed` belongs to the CHAIN HOST, not to stacks -- it is read and
        written on the component prefix but never reaches the plugin. */
@@ -2108,11 +2126,32 @@ if (R){
     var changed = false;
     Object.keys(params).forEach(function(full){
       var i = full.indexOf(":"), k = i < 0 ? full : full.slice(i+1);
+      /*
+       * rui_play -- "on:tick:bpm[:devms]" -- is the Tool tab's transport. The
+       * manager pushes it on every play-state EDGE and, while playing, a few
+       * times a second with the module's position; `state` (and so `prog`) is
+       * re-read only when the module's rev moves, which a running transport
+       * does not do. So the head is anchored from here, through the same
+       * reanchor() the prog string uses: a push names a RANGE, not a point.
+       */
+      if (k === "rui_play"){
+        var f = String(params[full]).split(":");
+        if (prog){
+          prog.running = f[0] === "1";
+          prog.posUnits = +f[1] || 0;
+          if (+f[2] > 0) prog.bpm = +f[2];
+          reanchor(prog);
+          changed = true;
+        }
+        return;
+      }
       if (vals[k] !== params[full]){ vals[k] = params[full]; changed = true; }
     });
     if (changed) render();
   });
-  R.getChainParams().then(function(list){
+  /* A tool iframe is never answered here -- the Tool tab has no chain_params
+     to hand out -- so META comes from module.json below instead. */
+  if (!TOOL) R.getChainParams().then(function(list){
     (list || []).forEach(function(m){ META[m.key] = m; });
     render();
   }).catch(function(){ render(); });

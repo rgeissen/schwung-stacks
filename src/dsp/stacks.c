@@ -961,6 +961,16 @@ typedef struct {
     atomic_int       status;        /* 0 idle, 1 working, 2 ok, 3 failed */
     int              recv_ch;       /* cached slot receive channel, for stamping */
     int              track;         /* tool: the Move track (1-4) the output addresses */
+    /*
+     * THE TOOL TAB'S LIVE SYNC (docs/MODULES.md "Remote UI for overtake
+     * tools"). `rev` bumps on every snapshot-visible change -- a write, a
+     * parse landing, a status transition -- and the manager re-reads `state`
+     * only when it moved; `blocks` is the device clock the browser time-bases
+     * its playhead on, in render blocks so it costs nothing to keep.
+     */
+    unsigned         rev;
+    int              status_rev_seen;
+    unsigned long    blocks;
 } stk_t;
 
 /* ======================================================================
@@ -2551,9 +2561,15 @@ static int stk_tick(void *instance, int frames, int sample_rate,
     /* Pick up a progression the worker finished parsing. An acquire-load
      * against its release-store, so `staging` is fully written before we can
      * observe the sequence number that publishes it. */
+    st->blocks++;
+    {
+        int sn = atomic_load(&st->status);
+        if (sn != st->status_rev_seen) { st->status_rev_seen = sn; st->rev++; }
+    }
     int seq = atomic_load_explicit(&st->staging_seq, memory_order_acquire);
     if (seq != st->staging_applied) {
         st->staging_applied = seq;
+        st->rev++;
         st->prog = st->staging;
         if (st->sel > st->prog.count) st->sel = st->prog.count;
         if (st->sel < 1) st->sel = 1;
@@ -3195,6 +3211,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
 static void stk_set_param(void *instance, const char *key, const char *val) {
     stk_t *st = (stk_t *)instance;
     if (!st || !key || !val) return;
+    st->rev++;                      /* every write is snapshot-visible */
     stk_set_param_inner(instance, key, val);
 
     /*
@@ -4214,6 +4231,54 @@ static int fmt_prog(const stk_t *st, char *buf, int buf_len) {
     return at;
 }
 
+/* Append `,"key":"value"` with the two characters JSON cannot carry raw
+ * escaped. Values here are option names, numbers and the module's own
+ * delimited strings; none carries a quote today, and this is what keeps
+ * that from ever mattering. */
+static int state_append_kv(char *buf, int at, int buf_len,
+                           const char *key, const char *val) {
+    int n = snprintf(buf + at, buf_len - at, ",\"%s\":\"", key);
+    if (n < 0 || at + n >= buf_len - 3) return 0;
+    int start = at; at += n;
+    for (const char *p = val; *p && at < buf_len - 3; p++) {
+        if (*p == '"' || *p == '\\') buf[at++] = '\\';
+        if ((unsigned char)*p < 0x20) continue;
+        buf[at++] = *p;
+    }
+    buf[at++] = '"'; buf[at] = 0;
+    return at - start;
+}
+
+static int stk_get_param(void *instance, const char *key, char *buf, int buf_len);
+
+static int state_append_map(const stk_t *st, char *buf, int at, int buf_len) {
+    static const char *const DERIVED[] = { "prog", "status", "patterns", "track", "module_id" };
+    static const char *const SKIP[] = { "state", "chain_params", "rui_poll", "grid" };
+    char v[4096];
+    int start = at;
+    for (unsigned i = 0; i < sizeof(DERIVED) / sizeof(DERIVED[0]); i++) {
+        if (stk_get_param((void *)st, DERIVED[i], v, sizeof v) < 0) continue;
+        at += state_append_kv(buf, at, buf_len, DERIVED[i], v);
+    }
+    /* Every declared key: walk the declaration for "key":"..." */
+    const char *p = CHAIN_PARAMS_JSON;
+    while ((p = strstr(p, "\"key\":\"")) != NULL) {
+        p += 7;
+        const char *e = strchr(p, '"');
+        if (!e || e - p >= 40) break;
+        char k[41];
+        memcpy(k, p, (size_t)(e - p)); k[e - p] = 0;
+        p = e;
+        int skip = 0;
+        for (unsigned i = 0; i < sizeof(SKIP) / sizeof(SKIP[0]); i++)
+            if (strcmp(k, SKIP[i]) == 0) skip = 1;
+        if (skip || is_trigger_key(k)) continue;
+        if (stk_get_param((void *)st, k, v, sizeof v) < 0) continue;
+        at += state_append_kv(buf, at, buf_len, k, v);
+    }
+    return at - start;
+}
+
 static int stk_get_param(void *instance, const char *key, char *buf, int buf_len) {
     stk_t *st = (stk_t *)instance;
     if (!st || !key || !buf || buf_len < 2) return -1;
@@ -4281,6 +4346,25 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
     if (strcmp(key, "run") == 0)   return snprintf(buf, buf_len, "%s", st->run ? "on" : "off");
     if (strcmp(key, "track") == 0) return snprintf(buf, buf_len, "%d", st->track);
     if (strcmp(key, "module_id") == 0) return snprintf(buf, buf_len, "stacks");
+    if (strcmp(key, "rui_poll") == 0) {
+        /*
+         * rev:on:tick:bpm[:devms] -- the Tool tab's cheap digest. The shim
+         * probes it in-process every few frames and pushes on change, so the
+         * expensive `state` read happens only when `rev` moved. `devms` rides
+         * only while playing: the stopped digest must stay byte-stable or
+         * every probe is a change.
+         */
+        int on = ((st->clock_running && st->run) || st->hold_run
+                  || st->preview == 2) ? 1 : 0;
+        float bpm_f = (g_host && g_host->get_bpm) ? g_host->get_bpm() : 120.0f;
+        if (bpm_f < 20.0f || bpm_f > 300.0f) bpm_f = 120.0f;
+        int pos_units = UNIT_CLOCKS > 0 ? (st->pulse / UNIT_CLOCKS) : 0;
+        if (on)
+            return snprintf(buf, buf_len, "%u:1:%d:%d:%lu", st->rev, pos_units,
+                            (int)(bpm_f + 0.5f), st->blocks * 128UL / 44UL);
+        return snprintf(buf, buf_len, "%u:0:%d:%d", st->rev, pos_units,
+                        (int)(bpm_f + 0.5f));
+    }
     if (strcmp(key, "preview") == 0) {
         static const char *const P[] = { "off", "chord", "loop" };
         return snprintf(buf, buf_len, "%s", P[clampi(st->preview, 0, 2)]);
@@ -4427,7 +4511,18 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
          * has its patterns but a dark lamp, and the button that is actually
          * loaded looks like the ones that are not. */
         at += snprintf(buf + at, buf_len - at, "#%d", st->pat_cur + 1);
-        at += snprintf(buf + at, buf_len - at, "\"}");
+        at += snprintf(buf + at, buf_len - at, "\"");
+        /*
+         * AND THE MAP THE TOOL TAB SEEDS FROM. As an overtake tool the manager
+         * reads `state` as a FLAT OBJECT OF STRINGS -- one value per param the
+         * panel binds, plus the derived ones a chain component published as
+         * viz.extra_keys. The blob stays first, under "s", so a restore that
+         * looks for it finds it and a set written before the map existed still
+         * loads. Keys come from the one declaration (CHAIN_PARAMS_JSON), so a
+         * param added there is in the snapshot without a second list.
+         */
+        at += state_append_map(st, buf, at, buf_len);
+        at += snprintf(buf + at, buf_len - at, "}");
         return at;
     }
     return -1;
