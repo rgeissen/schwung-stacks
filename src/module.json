@@ -23,18 +23,7 @@
       118
     ],
     "component_type": "tool",
-    "canvas_script": "canvas.js",
     "chain_params": [
-      {
-        "key": "grid",
-        "name": "Grid",
-        "short_name": "Grid",
-        "type": "canvas",
-        "canvas_script": "canvas.js",
-        "show_value": false,
-        "show_footer": false,
-        "claims_jog_click": true
-      },
       {
         "key": "sel",
         "name": "Chord",
@@ -43,16 +32,7 @@
         "min": 1,
         "max": 16,
         "default": 1,
-        "step": 1,
-        "viz": {
-          "kind": "custom:stkstaff",
-          "extra_keys": [
-            "prog",
-            "status",
-            "bypassed",
-            "patterns"
-          ]
-        }
+        "step": 1
       },
       {
         "key": "root",
@@ -797,18 +777,6 @@
         "access": "write"
       },
       {
-        "key": "stamp_mode",
-        "name": "Stamp Mode (legacy)",
-        "short_name": "StMod",
-        "options_as_string": true,
-        "type": "enum",
-        "options": [
-          "rec arm",
-          "write file"
-        ],
-        "default": 0
-      },
-      {
         "key": "clear",
         "name": "Clear",
         "short_name": "Clear",
@@ -956,13 +924,6 @@
         "default": 0
       }
     ],
-    "claims_edit_ccs": true,
-    "claims_ccs": [
-      54,
-      55,
-      62,
-      63
-    ],
     "shape_families": [
       {
         "name": "5th",
@@ -1086,9 +1047,6 @@
         "name": "Stacks",
         "params": [
           {
-            "key": "grid"
-          },
-          {
             "key": "sel"
           },
           {
@@ -1134,7 +1092,6 @@
           }
         ],
         "knobs": [
-          "grid",
           "sel",
           "scale",
           "key",

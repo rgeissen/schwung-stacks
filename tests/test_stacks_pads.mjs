@@ -10,11 +10,9 @@
  *    jog click has, so holding a pad sustains exactly like holding the jog.
  *  - Left/Right page the row, because a progression runs to sixteen chords and
  *    a row is eight. Paging clamps at both ends.
- *  - `host_pad_block` is a GLOBAL switch: while it is set, no other module can
- *    see the pads. It must be taken in onOpen and RELEASED in onClose, and the
- *    pads handed back DARK -- Move writes a pad LED only when its own value
- *    changes, so one we left lit stays lit on its track until something else
- *    moves it. Same failure the knob rings already document.
+ *  - the pads are the TOOL's, by the overtake contract: there is no global
+ *    switch to take, none to strand, and the host clears the LEDs on exit --
+ *    so close must write no pad LED and must touch no host switch.
  */
 import { readFileSync } from "node:fs";
 
@@ -52,7 +50,7 @@ const check = (what, got, want) => {
 };
 
 ov.onOpen(ctx);
-check("pads claimed on open", padBlock, 1);
+check("no chain pad switch is ever touched", padBlock, null);
 
 /* The row must distinguish four states, or you cannot read the progression. */
 LEDS = []; ov.tick(ctx);
@@ -227,35 +225,15 @@ check("pad past the end is inert", writes.join(", ") || "(nothing)", "(nothing)"
   check("the message is timestamped", typeof t0 === "number" && t0 >= 0, true);
 }
 
-/*
- * OWNERSHIP IS CONTINUOUS. The host releases pad_block whenever nothing on
- * screen wants the pads; taking it once in onOpen therefore is not enough --
- * dismiss the shadow UI and come back and the flag has been cleared while
- * onOpen does not run again. The overlay re-asserts every visible frame.
- */
-padBlock = 0;                       /* as if the host had released it */
-ov.tick(ctx);
-check("re-asserted while visible", padBlock, 1);
-padBlock = 0; shown = 0;            /* dismissed: must NOT fight the release */
-ov.tick(ctx);
-check("not re-asserted while hidden", padBlock, 0);
-shown = 1;
-
-/* And the pads go back, dark, before the block is released. */
+/* The LEDs are the host's to clear on exit -- an overtake unload clears the
+ * whole surface -- so close writes none, and never darkens pads it did not
+ * light: that was the chain-era bug of handing Move a grid it would not
+ * repaint. */
 LEDS = []; ov.onClose();
-check("pads released on close", padBlock, 0);
-/*
- * THE OVERLAY MUST NOT BLANK THEM ON THE WAY OUT.
- *
- * Blanking and releasing hands Move a grid it will not repaint -- it writes a
- * pad LED only when its OWN value changes -- so the pads respond and stay
- * invisible, which reads as "the pads are dead". Restoring Move's colours is
- * the HOST's job (test_pad_block_released), because it is the only place that
- * runs on every exit path; the overlay just releases.
- */
+check("no chain pad switch touched on close", padBlock, null);
 check("close writes no pad LEDs at all", LEDS.length, 0);
 
 console.log("\n" + (bad
   ? "FAIL: the pad row does not behave"
-  : "the pad row is the progression, pages with the arrows, and is given back"));
+  : "the pad row is the progression, pages with the arrows, and touches no host switch"));
 process.exit(bad);

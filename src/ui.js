@@ -26,8 +26,8 @@
  *
  * The Back button itself never reaches us -- the host takes it for suspend
  * (Shift+Back for exit, Shift+Vol+Click as the escape). Everything else on
- * the surface is ours, Shift included: it arrives as CC 49 here, which is why
- * canvas.js reads it from the wire under S.overtake.
+ * the surface is ours, Shift included: it arrives as CC 49 and canvas.js
+ * reads it from the wire.
  */
 
 import "/data/UserData/schwung/modules/tools/stacks/canvas.js";
@@ -69,7 +69,6 @@ let open = false;
 function parked() { return globalThis.overtakeParked === true; }
 
 globalThis.init = function () {
-    globalThis.STACKS_OVERTAKE = true;
     ov.onOpen(ctx);
     open = true;
     lastPoll = Date.now();

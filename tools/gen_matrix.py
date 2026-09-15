@@ -133,7 +133,6 @@ DESC = {
  "read":      "Reads the clip playing on this track and names its chords, so you can edit something you already recorded.",
  "read_mode": "Whether reading replaces the progression or appends to it, so one phrase can be built from several clips.",
  "stamp":     "Writes the progression back to the clip. Under Rec arm it plays exactly one lap for Move to record.",
- "stamp_mode":"Rec arm lets Move write the clip and is the default. Write file edits Song.abl directly, and is opt-in.",
  "clear":     "Empties the buffer to a single rest, in your Key and Octave Default &mdash; not to a demo progression.",
  "lanes":     "Which grid lines the staff draws: only the notes of the selected scale, or all seven letter names.",
  "preview":   "Whether editing a chord auditions it, and whether the progression keeps looping while the transport is stopped.",
@@ -148,7 +147,6 @@ DESC = {
  "remove":    "Deletes the selected chord. A progression of one is the floor, since every add gesture copies the chord you are on.",
  "play":      "Plays from the selected chord onward for exactly as long as it is held, looping round the end of the clip.",
  "sel":       "Which chord the CHORD and VOICE banks act on. The jog does this in the grid, so it spends no knob there.",
- "grid":      "The note grid itself &mdash; the fullscreen staff, entered by clicking the jog and left only with Back.",
 }
 
 check_desc_balance(DESC)
@@ -231,7 +229,7 @@ GESTURES = [
     # not exist is worse.
     # ------------------------------------------------------------------
     ("Jog", "select chord", "silent &mdash; selecting is navigation, not performance"),
-    ("Shift + Jog", "change bank", "Mute + Jog does the same, because Shift is not forwarded on every path"),
+    ("Shift + Jog", "change bank", "Mute + Jog does the same &mdash; a second modifier for a hand already on Mute"),
     ("Mute + Jog", "change bank", "the same as Shift + Jog"),
     ("Jog click (hold)", "play from the selected chord onward, and round the clip", "for exactly as long as you hold it; the playhead follows, transport or not"),
     ("Shift + Jog click", "insert a copy of the selected chord", "and follow it &mdash; you insert while editing something you want a variation of"),
@@ -250,7 +248,7 @@ GESTURES = [
     ("Up / Down", "page the parameter rows", "the set of three above the chords. The chord row never moves"),
     ("Left / Right", "scroll the parameter rows", "for lists longer than eight &mdash; 24 rhythms, 10 colours"),
     ("Mute + Left/Right", "page the chord row", "chords 1&ndash;8, then 9&ndash;16, clamping at both ends. The rare action goes behind the modifier: most progressions are under eight chords, while the option lists are long"),
-    ("Back", "leave the grid", "the only way out &mdash; the jog click is claimed for playing"),
+    ("Back", "park Stacks", "Move's screen comes back and the DSP keeps playing &mdash; an armed take goes on waiting for Record. Reopen from the Tools menu to resume where you were; <strong>Shift + Back</strong> exits"),
     ("CHD knob (Main)", "add several chords at once", "growing the count copies the last chord; while the buffer is still empty it divides the clip between the slots instead"),
 ]
 # ------------------------------------------------------------------
@@ -357,14 +355,13 @@ NOTES = [
      "and <em>Left/Right</em> scroll a row through a list longer than eight. The chords stay on "
      "<em>Mute&thinsp;+&thinsp;Left/Right</em>: the frequent action belongs on the bare button, "
      "and most progressions are under eight chords while Rhythm has 24 figures."),
-    ("Taking the pads is a GLOBAL switch.",
-     "<code>host_pad_block</code> stops pad notes reaching Move and forwards them here &mdash; for "
-     "every module, not just this one. So it is taken in <code>onOpen</code> and released in "
-     "<code>onClose</code>, and all 32 are handed back <strong>dark</strong>: Move writes a pad "
-     "LED only when its own value changes, so one left lit stays lit on its track until something "
-     "else moves it. Taking it once is not enough either &mdash; the host RELEASES it whenever "
-     "nothing on screen wants the pads, including when the display is dismissed, so the overlay "
-     "re-asserts every visible frame. Ownership is continuous; the owner sets, the host clears."),
+    ("The pads are the tool's.",
+     "Stacks is an <strong>overtake tool</strong>: while it is on screen every pad, knob and button "
+     "is its own, and nothing underneath sees them. There is no switch to take and none to strand; "
+     "the host clears every LED on the way in and on the way out. The two exceptions are "
+     "<strong>Play</strong> and <strong>Record</strong>, which are passed through to Move on "
+     "purpose &mdash; and Record is, today, swallowed by the shim while the tool is up, which is why "
+     "a stamp is armed here and recorded after <em>Back</em>."),
     ("Colour is VOICING. Adding a note is SHAPE.",
      "Colour used to be a density ladder &mdash; triad, 7th, 9th &mdash; and every rung of it "
      "produced a chord that ALREADY EXISTS as a shape: <code>maj7</code>, <code>add9</code>, "
@@ -603,9 +600,9 @@ footer {{ margin-top:52px; padding-top:18px; border-top:1px solid var(--line);
   <header class="masthead">
     <div>
       <h1>Stacks</h1>
-      <p>Control matrix for the chord-progression MIDI FX on Ableton Move.
-         {len(banks)} banks of eight encoders, reached by <strong>Shift&nbsp;+&nbsp;Jog</strong>
-         in the note grid or by paging the knob view. Opens on four empty bars; <em>Start</em>
+      <p>Control matrix for the chord-progression tool on Ableton Move, opened from
+         Schwung's Tools menu. {len(banks)} banks of eight encoders, reached by
+         <strong>Shift&nbsp;+&nbsp;Jog</strong>. Opens on four empty bars; <em>Start</em>
          holds {N_PROGS} progressions in three libraries to begin from &mdash;
          {N_GENRE} voiced by genre, {N_COMMON} common and {N_UNCOMMON} uncommon.</p>
     </div>

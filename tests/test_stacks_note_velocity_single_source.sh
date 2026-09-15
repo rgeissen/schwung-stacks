@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Playback, the stamp and the wire must all ask ONE function how loud a note is.
+# Playback and the wire must ask ONE function how loud a note is.
 #
 # WHY.  humanised_velocity() answers a DEVIATION around the GLOBAL velocity; it
 # knows nothing about the chord's own Chord Vel offset. Playback added that back
@@ -38,9 +38,10 @@ else
   fi
 fi
 
-# The three consumers must go through the shared helper.
+# The consumers must go through the shared helper: playback and the wire
+# (the file stamp was the third, and went with the file write on 2026-09-15 --
+# Move records the take now, so the wire IS the stamp).
 for site in \
-  "note_velocity(st, &st->prog.ch\[k\], k, i)" \
   "note_velocity(st, c, step, i)" \
   "note_velocity(st, c, k, i)"
 do
@@ -57,4 +58,4 @@ if ! grep -A 3 "^static int note_velocity" "$SRC" | grep -q "st->velocity + c->v
 fi
 
 [ "$fail" -eq 0 ] || exit 1
-echo "PASS: playback, stamp and wire all take note velocity from note_velocity()"
+echo "PASS: playback and the wire take note velocity from note_velocity()"

@@ -90,20 +90,12 @@ if opts[int(re.search(r'#define SHAPE_SINGLE\s+(\d+)', c).group(1))] != 'note':
 if opts[int(re.search(r'#define SHAPE_REST\s+(\d+)', c).group(1))] != 'rest':
     bad.append("SHAPE_REST does not point at the \"rest\" row")
 
-# 7. root's knobs are all real params, and the CANVAS bank still fits.
+# 7. root's knobs are all real params, and the MAIN bank still fits.
 #
-# The cap here used to be a flat 8 and that conflated two surfaces. `grid` and
-# `sel` are canvas plumbing -- the page itself and the jog -- and the bank
-# generator filters both out, so MAIN shows six cells of eight and LOOKS like
-# it has two spare. It does, on the canvas. On the knob-grid page they are two
-# of the eight, so a ninth key splits Main across two pages.
-#
-# What must never break is the CANVAS bank, which is the primary surface and
-# is hard-limited to eight cells. So that is what is pinned, and pagination of
-# the knob page is allowed rather than silently prevented by a number nobody
-# could trace back to a reason.
+# `sel` is the jog, not a cell, and the bank generator filters it out; the
+# bank is hard-limited to eight cells, so that is what is pinned.
 knobs = j['ui_hierarchy']['levels']['root']['knobs']
-canvas_cells = [k for k in knobs if k not in ('grid', 'sel')]
+canvas_cells = [k for k in knobs if k not in ('sel',)]
 if len(canvas_cells) > 8:
     bad.append(f"root fills {len(canvas_cells)} canvas cells; a bank holds 8")
 for k in knobs:
@@ -130,40 +122,29 @@ code = re.sub(r'//[^\n]*', '', code)
 if re.search(r'\b(rand|random|srand|drand48)\s*\(', code):
     bad.append("humanise calls rand() -- it must be a hash, so Stamp writes what was previewed")
 
-viz = cp['sel'].get('viz', {})
-if viz.get('kind') != 'custom:stkstaff':
-    bad.append("sel declares no custom:stkstaff viz kind")
-# `prog` is the whole progression and `status` is the verdict of a long
-# action -- a stamp or a clip read runs on the worker thread and answers
-# later, so without it a failure is indistinguishable from a success. Both
-# are values a widget NAMES without owning a cell, which is what extra_keys
-# is for; the cap is four.
-ek = viz.get('extra_keys') or []
-for want in ('prog', 'status'):
-    if want not in ek:
-        bad.append("sel's viz.extra_keys is missing %r (has %r)" % (want, ek))
-if len(ek) > 4:
-    bad.append("sel's viz.extra_keys exceeds the cap of four: %r" % (ek,))
+# The chain-era viz declaration (custom:stkstaff + extra_keys) is gone with
+# the chain: the Tool tab reads `state`, and the surface is ui.js over
+# canvas.js. What must still be true is that canvas.js exposes the surface.
 canvas = open('src/canvas.js').read()
-if 'custom:stkstaff' not in canvas:
-    bad.append("canvas.js registers no custom:stkstaff widget")
 if 'draw(ctx)' not in canvas and 'draw(' not in canvas:
     bad.append("canvas.js exposes no fullscreen draw")
 if 'onMidi' not in canvas:
     bad.append("canvas.js exposes no onMidi -- the takeover would have no jog")
-# The peek is why there is no as_page page: an as_page is a knob page, so the
-# jog pages away from it and an enum turn covers it with the host's peek panel.
-if 'as_page' in json.dumps(cp):
-    bad.append("an as_page param is back -- the jog cannot select chords there")
-
-# 9. the takeover is a DIVE-IN canvas param, and it is the first cell on Main
-grid = cp.get('grid', {})
-if grid.get('type') != 'canvas' or grid.get('as_page') is not None:
-    bad.append("grid is not a plain type:canvas dive-in param")
-if knobs and knobs[0] != 'grid':
-    bad.append(f"grid is not the first cell on Main (got {knobs[0]}) -- the takeover should be one click away")
-if not j['capabilities'].get('claims_edit_ccs'):
-    bad.append("claims_edit_ccs missing -- Delete would reach Move and delete a CLIP")
+# 9. A TOOL, not a chain component -- and nothing of the chain left in the
+#    manifest: no canvas param, no CC claims (every button is the tool's), no
+#    canvas_script for a knob grid that will never run it.
+if j.get('component_type') != 'tool' or not j.get('tool_config', {}).get('overtake'):
+    bad.append("module.json is not an overtake tool manifest")
+if not j['capabilities'].get('suspend_keeps_js'):
+    bad.append("suspend_keeps_js missing -- an armed take would die on Back")
+bp = j['capabilities'].get('button_passthrough') or []
+if 85 not in bp or 118 not in bp:
+    bad.append(f"button_passthrough must carry Play (85) and Record (118), has {bp}")
+for stale in ('canvas_script', 'claims_ccs', 'claims_edit_ccs'):
+    if stale in j['capabilities']:
+        bad.append(f"chain-era capability {stale} is back")
+if any(p.get('type') == 'canvas' or p.get('as_page') is not None for p in cp.values()):
+    bad.append("a canvas/as_page param is back -- the surface is ui.js, not a knob page")
 
 for b in bad:
     print("FAIL: " + b)
@@ -203,47 +184,38 @@ grep -q 'setParam(key, "~"' "$CANVAS" || bad "canvas.js does not send relative e
 grep -q "val\[0\] == '~'" "$C" || bad "stacks.c does not accept a ~N relative write"
 note "relative enum writes travel in the value, not the key"
 
-# 9d. SHIFT HAS TWO SOURCES, AND THE SURFACE DECIDES WHICH.
-#     Under the chain's canvas runtime CC 49 is not in the shim's forward list
-#     (14, 3, 51, 40-43, 71-78, 88, plus claimed), so a `d1 === 49` branch is
-#     unreachable code that looks implemented -- which is precisely how
-#     Shift+Jog came to silently do nothing twice; Shift is READ from
-#     shadow_get_shift_held(). As an OVERTAKE tool the opposite holds, measured
-#     on the device: CC 49 IS forwarded, and the shim's own tracking is
-#     documented as not working in that mode -- so it is taken from the wire.
-#     Both must exist, and the CC branch must be the recorder for S.overtake,
-#     not a gesture handler of its own.
-grep -q 'shadow_get_shift_held' "$CANVAS" \
-    || bad "canvas.js does not read Shift from the shim binding (chain surface)"
+# 9d. SHIFT COMES FROM THE WIRE, ONCE. As an overtake tool CC 49 IS forwarded
+#     (measured on the device), and the shim's own tracking is documented as
+#     not working in that mode -- so canvas.js never asks the shim, and the
+#     one CC-49 site is the RECORDER; a second would be a gesture on a
+#     modifier, and gestures read shiftHeld().
 grep -q 'd1 === 49) { S.shiftCC = d2 > 0' "$CANVAS" \
-    || bad "canvas.js does not record CC 49 into S.shiftCC (overtake surface)"
-grep -q 'if (S.overtake) return !!S.shiftCC' "$CANVAS" \
-    || bad "shiftHeld() does not prefer the wire under S.overtake"
+    || bad "canvas.js does not record CC 49 into S.shiftCC"
+grep -q 'function shiftHeld() { return !!S.shiftCC; }' "$CANVAS" \
+    || bad "shiftHeld() is not the wire"
+if grep -q 'shadow_get_shift_held' "$CANVAS"; then
+    bad "canvas.js asks the shim for Shift, which does not work under an overtake"
+fi
 if python3 -c "
 import re,sys
 src=open('$CANVAS').read()
 code=re.sub(r'/\*.*?\*/','',src,flags=re.S)
 code=re.sub(r'//[^\n]*','',code)
-# one CC-49 site only: the recorder. A second is a gesture waiting on a CC
-# that half the surfaces never send.
 sys.exit(0 if len(re.findall(r'd1 === (SHIFT_CC|49)\b', code)) > 1 else 1)
 "; then
-    bad "canvas.js has a second CC 49 site -- a gesture on a CC the chain never forwards"
+    bad "canvas.js has a second CC 49 site -- a gesture on the modifier itself"
 fi
-note "Shift: shadow_get_shift_held() on the chain, CC 49 from the wire under an overtake"
+note "Shift: CC 49 from the wire, one recorder"
 
 # 9f. AN UNBOUND KNOB MUST BE DARK. Colour 0 is reserved for "nothing is bound
-#     here" (param_pages/knob_leds.mjs), and the takeover has to drive the rings
-#     itself: diving in calls exitParamPages, which hands them BACK to Move
-#     rather than clearing them, so an overlay that writes nothing inherits
-#     Move's track colours -- lit, sometimes red, over knobs that do nothing.
+#     here" (param_pages/knob_leds.mjs), and the tool drives the rings itself:
+#     the host hands the surface over dark, so an unbound slot must be painted
+#     dark on purpose and a bound one lit.
 grep -q 'key ? ledColor' "$CANVAS" \
     || bad "canvas.js does not force colour 0 for an unbound knob slot"
-grep -q 'shadow_restore_knob_leds' "$CANVAS" \
-    || bad "canvas.js does not give the rings back on close"
 grep -q 'PARAM_RANGES' "$CANVAS" \
     || bad "canvas.js has no generated ranges, so LED intensity cannot be right"
-note "knob rings: unbound is dark, ranges generated, rings restored on exit"
+note "knob rings: unbound is dark, ranges generated"
 
 # 9e. THE BANKS ARE THE LEVELS. Two surfaces onto one module only pay for
 #     themselves while what you learn on either transfers; two layouts for the
@@ -264,7 +236,7 @@ bad = []
 if list(banks) != [b for b,_ in pairs]:
     bad.append(f"bank order {list(banks)} != {[b for b,_ in pairs]}")
 for bank, level in pairs:
-    want = [k for k in lv[level]['knobs'] if k not in ("grid", "sel")]
+    want = [k for k in lv[level]['knobs'] if k not in ("sel",)]
     got = banks.get(bank, [])
     if got != want:
         bad.append(f"{bank} bank {got} != {level} level {want}")
@@ -292,17 +264,18 @@ note "worker thread is explicitly SCHED_OTHER"
 if [ $fail -eq 0 ]; then # ---------------------------------------------------------------------------
 # EVERY note path resolves through chord_notes_g WITH the grouping.
 #
-# Voice Grouping is applied inside chord_notes_g, which is what makes STAMP
-# respect it: the stamp builder, the sequencer and the staff all resolve notes
-# through that one function, so a clip cannot be written that you never heard.
-# The failure this guards is a FOURTH call site added later that forgets the
-# argument -- it would compile, play correctly, and silently stamp the ungrouped
-# chords. Assert the call shape rather than trusting the convention.
+# Voice Grouping is applied inside chord_notes_g, which is what makes the
+# picture honest: the sequencer and the staff both resolve notes through that
+# one function, so the staff cannot draw a chord the synth never played. (The
+# file stamp was a third caller until the file write went, 2026-09-15; Move
+# records the wire now, so the wire is the stamp.) The failure this guards is
+# a call site added later that forgets the argument -- it would compile and
+# silently voice ungrouped chords on one surface. Assert the call shape.
 SRC=src/dsp/stacks.c
 CALLS=$(grep -c 'chord_notes_g(' "$SRC")
-# 1 prototype + 1 definition + 3 call sites
-if [ "$CALLS" -ne 5 ]; then
-    echo "FAIL: expected 5 mentions of chord_notes_g (proto, def, 3 call sites), found $CALLS"
+# 1 prototype + 1 definition + 2 call sites
+if [ "$CALLS" -ne 4 ]; then
+    echo "FAIL: expected 4 mentions of chord_notes_g (proto, def, 2 call sites), found $CALLS"
     grep -n 'chord_notes_g(' "$SRC"
     exit 1
 fi
@@ -318,9 +291,8 @@ if grep -n 'chord_notes_g(' "$SRC" | grep -v 'static int chord_notes_g' \
         fi
     done
 fi
-echo "  every note path (stamp, sequencer, staff) carries the voice grouping"
+echo "  every note path (sequencer, staff) carries the voice grouping"
 python3 tools/check_triggers.py || exit 1
-python3 tools/check_edit_cc_modifier.py || exit 1
 python3 tools/check_gestures.py || exit 1
 echo "PASS: $(basename "$0")"; else echo "FAIL: $(basename "$0")"; fi
 exit $fail

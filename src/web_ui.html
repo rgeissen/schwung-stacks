@@ -131,7 +131,8 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0}
  * worker thread and answer immediately, so the button press told you nothing
  * and a failure was indistinguishable from a success -- the module has always
  * known (`status` is idle/working/ok/failed) and nothing ever asked. It rides
- * in on viz.extra_keys beside `prog`.
+ * in with `state` beside `prog`; a transition bumps the module's rev, so the
+ * Tool tab re-reads.
  *
  * Shown only while it has something to say: `working`, and the verdict for a
  * few seconds after. `idle` is not news.
@@ -985,9 +986,9 @@ var aMs = 0, aU = 0, aSet = false;
  * Re-anchoring on every publish therefore pulls the drawn head BACK by up to a
  * whole unit -- an eighth of a step, a third of a second at 98bpm -- and it
  * runs forward until the next publish pulls it back again. That was invisible
- * while `prog` only arrived after something was written; with the heartbeat
- * carrying the transport twice a second it is a judder in the middle of every
- * chord.
+ * while `prog` only arrived after something was written; with `rui_play`
+ * carrying the position a few times a second it is a judder in the middle of
+ * every chord.
  *
  * The report is an INTERVAL, [pos, pos+1). While the drawn position is inside
  * it the picture and the module agree, and the anchor is left alone. Outside
@@ -1244,11 +1245,9 @@ var BANKS = [
   { id:"clip",  name:"CLIP",  scope:"prog",
     /* `preview` moved to the header transport button; `run` stays, it is a
        mode (follow Move's clock) rather than a transport. */
-    /* No stamp_mode: `write file` is off the UI on both surfaces. It cannot
-       win against Move -- the active set is held in memory and autosaved over,
-       measured at 142s -- so the choice only offered a mode that silently
-       loses. The param survives for state compatibility and defaults to rec
-       arm; the stamp button asserts that mode when it fires. */
+    /* There is no file stamp: it cannot win against Move, which holds the
+       active set in memory and autosaves over it (measured at 142s). Stamp
+       arms one lap for Move's own recorder. */
     keys:["patterns","read","read_mode","stamp","clear","lanes","run",
           "duplicate","stretch","compress","undo"] },
 ];
@@ -1289,7 +1288,7 @@ var SPAN = { patterns:6,
   vel:2, gate:2, strum:2,
   /* CLIP: the two-option modes and the actions pair up, so the bank is read
      as rows of related things rather than one column of full-width cards. */
-  read_mode:3, stamp_mode:3, lanes:3, run:3,
+  read_mode:3, lanes:3, run:3,
   read:3, stamp:3, clear:3, duplicate:3, stretch:3, compress:3, undo:3
 };
 /*
@@ -1758,10 +1757,6 @@ function actionControl(k){
   b.setAttribute("aria-label", label);
   b.onclick = function(){
     if (k === "stamp"){
-      /* Assert the mode rather than trust it: a preset saved before this
-         change can still restore `write file`, and that write would be
-         overwritten by Move without saying so. */
-      set("stamp_mode", "rec arm");
       set(k, "on");
       /* Nothing to remember: the module reports `armed` from here, and it
          reports it to the Move's screen at the same time. */
@@ -1813,7 +1808,6 @@ function buildPane(){
    * makes the arrival of metadata a change.
    */
   var ready = B.keys.filter(function(k){ return !!META[k]; });
-  /* stamp_mode renames the stamp button, so it is an input to the DOM. */
   /* Family decides which shapes the picker lists, so it is part of the DOM's
      inputs even on a bank that does not render it. */
   var sig = bank + "|" + si + "|" + browseFamIndex() + "|" +
@@ -2188,7 +2182,6 @@ if (R){
     read:{name:"Read Clip",access:"write",options:["off","on"]},
     read_mode:{name:"Read Mode",options:["replace","append"]},
     stamp:{name:"Stamp Clip",access:"write",options:["off","on"]},
-    stamp_mode:{name:"Stamp Mode",options:["rec arm","write file"]},
     clear:{name:"Clear",access:"write",options:["off","on"]},
     lanes:{name:"Note Lanes",options:["scale","diatonic"]},
     preview:{name:"Preview",options:["off","chord","loop"]},

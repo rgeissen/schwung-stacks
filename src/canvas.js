@@ -1,34 +1,30 @@
 /*
- * stacks/canvas.js -- the note grid.
+ * stacks/canvas.js -- the note grid: the whole 128x64 surface of the tool.
  *
- * ONE FILE, TWO SCALES. `draw` owns the FULL SCREEN takeover you dive into
- * from the Grid cell; `drawCell` draws the same progression shrunk into the
- * Chord knob's box on the ordinary knob page.
+ * Written against a `ctx` (width, height, the draw calls, now, getParam,
+ * setParam) and driven through the `canvas_overlay` hooks at the bottom.
+ * ui.js builds that ctx from the overtake draw globals and runs the hooks
+ * under the host's lifecycle; the tests build it from stubs. Nothing here
+ * knows which.
  *
- * There is deliberately NO `drawPage` / as_page here any more. An as_page page
- * is a knob page carrying a drawer, which means two things it cannot escape:
- * the JOG pages away from it, so it can never be a chord cursor; and turning an
- * enum knob on it raises the host's full-screen enum peek, which clears the
- * screen and covers the very grid the page exists to show. The takeover has
- * neither problem -- param pages do not run in VIEWS.CANVAS at all.
+ * THE RULES THIS FILE LIVES UNDER
  *
- * THE RULES THIS FILE LIVES UNDER (docs/PARAM_PAGES.md)
+ *   Every size is derived from ctx.width / ctx.height, never written down.
  *
- *   The frame is not the screen. (0,0) is the band's top-left; there is no
- *   accessor that reaches absolute space, and every size below is derived from
- *   ctx.width / ctx.height rather than written down.
- *
- *   No reads. Values arrive as an argument. `prog` is ONE viz extra_key
- *   carrying the whole progression -- names, lengths, offsets, the scale mask
- *   and the resolved pitches -- because a read is ~2.8 ms against a 1.68 ms
- *   page render, so one read per chord would cost more than the entire screen.
+ *   Reads are RARE and named. `prog` is ONE read carrying the whole
+ *   progression -- names, lengths, offsets, the scale mask and the resolved
+ *   pitches -- because a read is ~2.8 ms against a 1.7 ms whole-screen
+ *   render, so one read per chord would cost more than the entire screen.
+ *   draw and tick read nothing; onPoll reads a handful of keys four times a
+ *   second, and buys a bank refresh only when the picture says the values
+ *   moved.
  *
  *   A read that did not answer must NEVER become a picture. `prog` absent,
  *   empty or malformed draws the empty band; it does not draw a plausible
  *   progression that nothing is playing.
  *
- *   One strike. A throw retires this drawer for the session and the host draws
- *   an ordinary knob page, so nothing here may assume its input is well formed.
+ *   Nothing here may assume its input is well formed: a throw retires the
+ *   surface for the session.
  */
 
 /* ===================================================================== *
@@ -297,17 +293,12 @@ const JOG_TURN_CC = 14;
  * one of the family rather than as an invention.
  */
 const MUTE_CC = 88;
-const JOG_CLICK_CC = 3;            /* ours: module.json declares claims_jog_click */
+const JOG_CLICK_CC = 3;
 /*
- * COPY and DELETE, claimed via capabilities.claims_edit_ccs: Copy duplicates
- * the selected chord, Delete removes it. Those buttons already mean exactly
- * that everywhere else on Move, so they need no explaining -- and the claim is
- * what keeps them from also copying or DELETING a Move clip behind the grid.
- *
- * The JOG CLICK is ours too, because the grid param declares
- * `claims_jog_click`. Without that the host steals CC 3 to close the canvas
- * before an overlay ever sees it, which is right for a viewer and wrong for an
- * editor you are meant to stay inside. With it, BACK is the only way out.
+ * COPY and DELETE: Copy duplicates the selected chord, Delete removes it.
+ * Those buttons already mean exactly that everywhere else on Move, so they
+ * need no explaining. As an overtake every button is ours, the jog click
+ * included -- there is no host underneath to steal CC 3 for a "return".
  */
 const COPY_CC = 60;    /* duplicates the whole progression */
 const DELETE_CC = 119;
@@ -460,7 +451,7 @@ function tinyPrint(ctx, x, y, text) {
  * on the control. Labels are capped at four characters by design.
  * ===================================================================== */
 /* ---- BEGIN GENERATED ranges (tools/gen_chain_params.py) ---- */
-const PARAM_RANGES = {"sel":[1,16],"root":["C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"],"degree":["I","II","III","IV","V","VI","VII","rest"],"coct":[1,5],"family":["5th","triad","6th","7th","9th","ext"],"shape":["rest","note","5","oct","maj","min","dim","aug","sus2","sus4","6","m6","69","maj7","min7","dom7","m7b5","dim7","mMaj7","7sus4","7sus2","aug7","maj7#5","7b5","add9","madd9","maj9","min9","9","7b9","7#9","m9b5","11","m11","maj11","13","maj13","m13"],"inv":[-3,3],"len":[1,64],"off":[0,15],"ccolour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"cstrum":[0,100],"cvel":[-63,63],"cgate":[-50,50],"cmute":["off","on"],"rhythm":["hold","half","quarter","eighth","16th","offbeat","dotted","push","tresillo","son 3-2","son 2-3","rumba","bossa","baiao","montuno","charl","charl 2","shuffle","comp","gallop","drive","anthem","garage","broken"],"ctrans":[-12,12],"genre":["none","Pop","Rock","Metal","Jazz","Blues","Soul","Gospel","Funk","R&B","Bossa","Latin","House","Reggae","Country","Cinematic"],"progression":["none","Axis","Sad Axis","Doo-wop","Pachelbel","Royal Road","Emotional","I-IV-V","Mixolydian","Grunge","Anthem","Thrash","Power Metal","Doom","Phrygian","ii-V-I","Minor ii-V","Rhythm A","Turnaround","Coltrane","Tritone","Bird Blues","Modal","12-bar","Quick IV","Minor blues","8-bar","Neo-soul","Montuno","iii-vi-ii-V","Slow jam","Plagal","Shouting","Walk-up","Amen","JB vamp","Funk turn","P-Funk","Clav","Two-chord","Minor lift","Quiet storm","Ipanema","Wave","Desafinado","Corcovado","Guajira","Bolero","Salsa","Deep vamp","Two-bar","Filter","Garage","Skank","Roots minor","Rockers","Boot scoot","Train","Andalusian","Aeolian","Dorian","Picardy","Ostinato","Lament"],"common":["none","I-V-vi-IV","vi-IV-I-V","I-vi-IV-V","I-IV-V","I-IV-I-V","ii-V-I","I-V-IV","I-iii-IV-V","vi-V-IV-V","i-VI-III-VII","i-iv-v","i-VII-VI-VII"],"uncommon":["none","I-bIII-IV-iv","Phrygian","Lydian II","Backdoor","bVI-bVII-I","i-v-bVI-bVII","Chrom desc","Borrowed IV","Secondary V","i-bVI-iv-V","Double plagal","Aug lift","Tritone col"],"colour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"grouping":["none","dynamic","dyn +1oct","dyn +2oct","C1-B2","C2-B3","C3-B4","open 1","open 2","open 3","guitar","drop 2","drop 3","drop 4","drop 2+3","drop 2+4"],"scale":["Chromatic","Major","Minor","Dorian","Phrygian","Lydian","Mixolydian","Locrian","HarmMinor","MelMinor","PentMaj","PentMin","Blues"],"key":["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"],"steps":[1,16],"rate":["2 bar","1 bar","1/2","1/4"],"run":["off","on"],"octave":[-2,2],"velocity":[1,127],"gate":[5,100],"hum_vel":[0,100],"roll_vel":["off","on"],"hum_time":[0,100],"roll_time":["off","on"],"swing":[0,75],"lanes":["scale","diatonic"],"preview":["off","chord","loop"],"read":["off","on"],"read_mode":["replace","append"],"defoct":[1,5],"bars":[1,16],"stamp":["off","on"],"stamp_mode":["rec arm","write file"],"clear":["off","on"],"pat_store":[1,16],"pat_recall":[1,16],"pat_delete":[1,16],"play":["off","on"],"duplicate":["off","on"],"stretch":["off","on"],"compress":["off","on"],"undo":["off","on"],"redo":["off","on"],"insert":["off","on"],"remove":["off","on"]};
+const PARAM_RANGES = {"sel":[1,16],"root":["C1","C#1","D1","D#1","E1","F1","F#1","G1","G#1","A1","A#1","B1","C2","C#2","D2","D#2","E2","F2","F#2","G2","G#2","A2","A#2","B2","C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4","C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"],"degree":["I","II","III","IV","V","VI","VII","rest"],"coct":[1,5],"family":["5th","triad","6th","7th","9th","ext"],"shape":["rest","note","5","oct","maj","min","dim","aug","sus2","sus4","6","m6","69","maj7","min7","dom7","m7b5","dim7","mMaj7","7sus4","7sus2","aug7","maj7#5","7b5","add9","madd9","maj9","min9","9","7b9","7#9","m9b5","11","m11","maj11","13","maj13","m13"],"inv":[-3,3],"len":[1,64],"off":[0,15],"ccolour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"cstrum":[0,100],"cvel":[-63,63],"cgate":[-50,50],"cmute":["off","on"],"rhythm":["hold","half","quarter","eighth","16th","offbeat","dotted","push","tresillo","son 3-2","son 2-3","rumba","bossa","baiao","montuno","charl","charl 2","shuffle","comp","gallop","drive","anthem","garage","broken"],"ctrans":[-12,12],"genre":["none","Pop","Rock","Metal","Jazz","Blues","Soul","Gospel","Funk","R&B","Bossa","Latin","House","Reggae","Country","Cinematic"],"progression":["none","Axis","Sad Axis","Doo-wop","Pachelbel","Royal Road","Emotional","I-IV-V","Mixolydian","Grunge","Anthem","Thrash","Power Metal","Doom","Phrygian","ii-V-I","Minor ii-V","Rhythm A","Turnaround","Coltrane","Tritone","Bird Blues","Modal","12-bar","Quick IV","Minor blues","8-bar","Neo-soul","Montuno","iii-vi-ii-V","Slow jam","Plagal","Shouting","Walk-up","Amen","JB vamp","Funk turn","P-Funk","Clav","Two-chord","Minor lift","Quiet storm","Ipanema","Wave","Desafinado","Corcovado","Guajira","Bolero","Salsa","Deep vamp","Two-bar","Filter","Garage","Skank","Roots minor","Rockers","Boot scoot","Train","Andalusian","Aeolian","Dorian","Picardy","Ostinato","Lament"],"common":["none","I-V-vi-IV","vi-IV-I-V","I-vi-IV-V","I-IV-V","I-IV-I-V","ii-V-I","I-V-IV","I-iii-IV-V","vi-V-IV-V","i-VI-III-VII","i-iv-v","i-VII-VI-VII"],"uncommon":["none","I-bIII-IV-iv","Phrygian","Lydian II","Backdoor","bVI-bVII-I","i-v-bVI-bVII","Chrom desc","Borrowed IV","Secondary V","i-bVI-iv-V","Double plagal","Aug lift","Tritone col"],"colour":["close","open","drop2","drop3","drop2+4","shell","rootless","quartal","spread","cluster"],"grouping":["none","dynamic","dyn +1oct","dyn +2oct","C1-B2","C2-B3","C3-B4","open 1","open 2","open 3","guitar","drop 2","drop 3","drop 4","drop 2+3","drop 2+4"],"scale":["Chromatic","Major","Minor","Dorian","Phrygian","Lydian","Mixolydian","Locrian","HarmMinor","MelMinor","PentMaj","PentMin","Blues"],"key":["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"],"steps":[1,16],"rate":["2 bar","1 bar","1/2","1/4"],"run":["off","on"],"octave":[-2,2],"velocity":[1,127],"gate":[5,100],"hum_vel":[0,100],"roll_vel":["off","on"],"hum_time":[0,100],"roll_time":["off","on"],"swing":[0,75],"lanes":["scale","diatonic"],"preview":["off","chord","loop"],"read":["off","on"],"read_mode":["replace","append"],"defoct":[1,5],"bars":[1,16],"stamp":["off","on"],"clear":["off","on"],"pat_store":[1,16],"pat_recall":[1,16],"pat_delete":[1,16],"play":["off","on"],"duplicate":["off","on"],"stretch":["off","on"],"compress":["off","on"],"undo":["off","on"],"redo":["off","on"],"insert":["off","on"],"remove":["off","on"]};
 /* ---- END GENERATED ranges ---- */
 
 const BANKS = [
@@ -523,11 +514,10 @@ function shortValue(v) {
  * value rides on top as intensity, and colour 0 means NOTHING IS BOUND HERE --
  * a dark ring is one that will do nothing if you turn it.
  *
- * The takeover has to drive them itself. `tickParamPages` owns the rings on the
- * knob pages, and diving in here calls `exitParamPages`, which deliberately
- * HANDS THEM BACK to Move (`shadow_restore_knob_leds`) rather than clearing
- * them -- so without this an overlay inherits Move's own track colours, and a
- * bank with empty slots shows lit, even red, rings over knobs that do nothing.
+ * The tool drives them itself: the host clears every LED when an overtake
+ * loads and hands the surface over dark, so a bank with empty slots must be
+ * painted as such or those knobs sit dark over rings that do nothing -- and,
+ * worse, a bound one sits dark too.
  *
  * Ramps copied from param_pages/knob_leds.mjs, which cannot be imported here
  * (an overlay is loaded standalone, with no module resolver). Ordered by
@@ -550,9 +540,8 @@ const LED_CC0 = 71;                 /* CC 71-78, the same CCs the encoders send 
  * -- the same direction the staff reads and the same convention as Move's own
  * drum racks.
  *
- * The pads only reach us while `host_pad_block` is on, which also stops them
- * reaching Move. That is a GLOBAL switch, so it is tied strictly to onOpen /
- * onClose: leave it set and every other module loses its pads to us.
+ * The pads are ours: an overtake owns the whole surface, so a pad reaches us
+ * and nothing else, and there is no global switch to take or to strand.
  */
 const PAD_ROW1 = 68;                /* bottom-left pad */
 const PAD_ROW_LEN = 8;
@@ -657,52 +646,6 @@ const PAD_ROW_HUE = [
 const lastPad = new Array(PAD_ROW_LEN).fill(-1);
 const lastLed = new Array(8).fill(-1);
 
-/*
- * MOVE PAINTS THESE PADS TOO, AND A DIFF CACHE CANNOT SEE IT.
- *
- * The pad block stops pad presses reaching Move; it says nothing about the
- * LEDS. Move goes on lighting the pad of any note sounding on the track -- and
- * the notes this module plays ARE sounding on that track, so every chord it
- * plays writes its own pitches onto the grid, over the top of the rows drawn
- * here. Reported from the device as the played chord notes "shining through"
- * the pads.
- *
- * Our writes are DIFFED against `lastPad`, which is bookkeeping of what we
- * believe each pad shows -- and Move overwriting a pad falsifies exactly that
- * belief, so the diff then suppresses the very repaint that would fix it. The
- * bleed is permanent rather than momentary for that reason.
- *
- * The shim mirrors MOVE's own LED intent into overlay SHM, so a change there
- * is Move having painted. That invalidates our cache for those pads and the
- * ordinary paint below reasserts them: the note flashes for a frame or two
- * instead of staying. Throttled, because the snapshot builds an object and
- * this runs on the draw path -- a tenth of a second is invisible to the eye
- * and costs one SHM read in twelve frames.
- *
- * The alternative is the host suppressing Move's pad LEDs whenever the block
- * is held, which is the tidier answer and is not ours to make here: it is a
- * shim change, global to every module, and it belongs upstream.
- */
-const movePadSeen = new Array(32).fill(-2);
-let padReconAt = 0;
-const PAD_RECON_MS = 100;
-
-function reconcilePadLeds(now) {
-    if (now - padReconAt < PAD_RECON_MS) return;
-    padReconAt = now;
-    if (typeof shadow_get_pad_led_snapshot !== "function") return;
-    const snap = shadow_get_pad_led_snapshot();
-    if (!snap) return;
-    for (let n = 0; n < 32; n++) {
-        const c = snap[String(PAD_ROW1 + n)] | 0;
-        if (c === movePadSeen[n]) continue;
-        movePadSeen[n] = c;
-        /* Move wrote this pad, so whatever we believed it shows is wrong. */
-        const row = n >> 3, col = n & 7;
-        if (row === 0) lastPad[col] = -1;
-        else lastParamPad[row - 1][col] = -1;
-    }
-}
 
 /* 0..1 for a value, or null when there is nothing to show. PARAM_RANGES is
  * generated from module.json, so a range here cannot drift from the contract. */
@@ -849,17 +792,7 @@ const S = {
     prog: null,
     cursor: 0,
     shift: false,    /* Mute held -- the bank modifier */
-    /*
-     * AS AN OVERTAKE TOOL (ui.js sets this before onOpen) the host contract
-     * changes in three places, and each is a guard below rather than a fork:
-     * the pads and rings are OURS by definition, so there is no block to take
-     * and nothing to give back; Move cannot paint pads underneath us, so there
-     * is nothing to reconcile; and Shift ARRIVES as CC 49 -- the shim's own
-     * tracking is documented as not working in overtake mode, so it is read
-     * from the wire (shiftCC) rather than asked for.
-     */
-    overtake: false,
-    shiftCC: false,
+    shiftCC: false,  /* Shift, from the wire -- see shiftHeld */
     /*
      * Opens on CHORD -- the bank you came in to use. BY NAME, not by index:
      * it was 1, and inserting START as the second bank silently moved the
@@ -907,31 +840,11 @@ const BANK_TITLE_MS = 900;
 function delta(v) { return v < 64 ? v : v - 128; }
 
 /*
- * SHIFT IS ASKED FOR, NOT LISTENED FOR.
- *
- * CC 49 never arrives: the shim forwards a fixed set of CCs to the UI (14, 3,
- * 51, 40-43, 71-78, 88, plus claimed ones) and Shift is not among them outside
- * overtake mode. So a `d1 === 49` branch here is unreachable code that looks
- * implemented -- which is exactly how Shift+Jog came to silently do nothing.
- *
- * The shim tracks Shift itself and publishes it in shadow_control; the host
- * exposes that as a global binding, and an overlay is evaluated in the same
- * QuickJS context as shadow_ui, so it can simply ASK at the moment of the
- * turn. Reading state beats waiting for an event that is not sent.
- *
- * Guarded by typeof and try/catch: an older host may not have the binding, and
- * a missing modifier must degrade to "no bank change", never to a throw --
- * a throw here retires the whole overlay for the session.
+ * SHIFT ARRIVES, as CC 49, and is recorded in onMidi. The shim's own Shift
+ * tracking is documented as not working in overtake mode, so it is never
+ * asked; the wire is the truth. Consumed there as a modifier, not a key.
  */
-function shiftHeld() {
-    if (S.overtake) return !!S.shiftCC;
-    try {
-        return typeof shadow_get_shift_held === "function"
-            && shadow_get_shift_held() !== 0;
-    } catch (e) {
-        return false;
-    }
-}
+function shiftHeld() { return !!S.shiftCC; }
 
 function bank() { return BANKS[S.bank] || BANKS[0]; }
 
@@ -1629,9 +1542,6 @@ globalThis.canvas_overlay = {
     widgetKind: "custom:stkstaff",
 
     onOpen(ctx) {
-        /* ui.js raises this before opening; the chain's canvas runtime never
-         * does, and every guard on it falls through to the chain behaviour. */
-        S.overtake = globalThis.STACKS_OVERTAKE === true;
         S.shiftCC = false;
         S.bank = CHORD_BANK;
         S.padPage = 0;
@@ -1640,9 +1550,6 @@ globalThis.canvas_overlay = {
         S.parmPage = 0;
         S.rowScroll = [0, 0, 0];
         for (const r of lastParamPad) r.fill(-1);
-        /* Take the pads. Global switch -- released in onClose, always.
-         * An overtake owns them already; the switch is the CHAIN's. */
-        if (!S.overtake && typeof host_pad_block === "function") host_pad_block(1);
         refresh(ctx);
         refreshBank(ctx);
         /* A stamp armed from the browser is already waiting when this opens,
@@ -1750,28 +1657,8 @@ globalThis.canvas_overlay = {
         if (ctx && typeof ctx.setParam === "function") ctx.setParam("play", "off");
         lastLed.fill(-1);
         lastPad.fill(-1);
-        /*
-         * GIVE THE PADS BACK BEFORE RELEASING THE BLOCK, and give them back
-         * DARK rather than leaving our colours on Move's grid -- Move writes a
-         * pad LED only when its own value changes, so a pad we left lit stays
-         * lit on its track until something else moves it. Same failure the
-         * knob rings document above.
-         */
         for (const r of lastParamPad) r.fill(-1);
-        /*
-         * DO NOT DARKEN THEM HERE. Blanking the pads and releasing the block
-         * hands Move a grid it will not repaint -- it writes a pad LED only
-         * when its own value changes -- so they respond and stay invisible,
-         * which reads as "the pads are dead".
-         *
-         * The host restores Move's own colours from the shim's SHM mirror when
-         * it releases the block, which is the only place that runs on EVERY
-         * exit path. Releasing here just brings that forward.
-         */
-        if (!S.overtake) {
-            if (typeof host_pad_block === "function") host_pad_block(0);
-            if (typeof shadow_restore_knob_leds === "function") shadow_restore_knob_leds();
-        }
+        /* The LEDs are the host's to clear on exit; nothing is darkened here. */
     },
 
     draw(ctx) {
@@ -1807,30 +1694,6 @@ globalThis.canvas_overlay = {
          */
         if (S.holdCC >= 0 && !S.holdLong && now - S.holdAt >= LONG_PRESS_MS)
             S.holdLong = true;
-        /*
-         * RE-ASSERT THE CLAIM EVERY FRAME WE ARE ACTUALLY ON SCREEN.
-         *
-         * The host RELEASES pad_block whenever nothing on screen wants the
-         * pads -- which is what stops us stranding them for every other module
-         * when you leave. The consequence is that taking them ONCE in onOpen
-         * is not enough: dismiss the shadow UI and come back, and the flag has
-         * been cleared while onOpen does not run again, so the pads would be
-         * dead until you reopened the staff.
-         *
-         * So ownership is continuous and idempotent: the owner asserts while
-         * visible, the host clears when nobody is. Gated on the display being
-         * SHOWN, or this would fight the very release it depends on -- `tick`
-         * is gated on the view, and the view outlives the screen.
-         */
-        if (!S.overtake && typeof host_pad_block === "function"
-            && (typeof shadow_get_display_mode !== "function"
-                || shadow_get_display_mode() === 1))
-            host_pad_block(1);
-
-        /* Anything Move has painted over invalidates our cache for those pads,
-         * so the two updates below reassert them -- see reconcilePadLeds.
-         * Under an overtake Move's pad writes never reach the hardware. */
-        if (!S.overtake) reconcilePadLeds(now);
         /* The pad row follows the playhead, so it updates per frame like the
          * head does -- and costs nothing when nothing moved. */
         updatePadLeds();
@@ -1856,8 +1719,7 @@ globalThis.canvas_overlay = {
             return;
         }
         /*
-         * PADS. Only reach us while host_pad_block is on, so there is no need
-         * to guard against Move seeing them too.
+         * PADS.
          *
          * A pad SELECTS and PLAYS: down selects the slot and starts it, up
          * stops it -- the same contract the jog click has, so holding a pad
@@ -2191,13 +2053,6 @@ globalThis.canvas_overlay = {
                 }
                 S.trigKnob = slot;
                 S.trigAt = t;
-                if (key === "stamp") {
-                    /* ONE STAMP, ONE MEANING -- asserted, not trusted. A state
-                     * saved before the write-file mode was retired can still
-                     * restore it, and that write is overwritten by Move
-                     * without a word. The panel asserts the same thing. */
-                    ctx.setParam("stamp_mode", "rec arm");
-                }
                 ctx.setParam(key, "on");
                 if (key === "stamp") {
                     S.status = "armed";
@@ -2257,66 +2112,6 @@ globalThis.canvas_overlay = {
             refresh(ctx);
             refreshBank(ctx);
             return;
-        }
-    },
-
-    /*
-     * The Chord cell: the progression's CONTOUR.
-     *
-     * Two wrong answers came first. A shrunken piano roll was the wrong thing
-     * made small -- adjacent chords share notes so their blocks butt into
-     * continuous lines, and at 15px the pitch scale collapses so distinct
-     * notes land on the same row. Uniform position blocks fixed the legibility
-     * and threw away the music: four identical bars say where you are and
-     * nothing about what is there.
-     *
-     * A contour is what a cell this size can actually carry. Each chord is a
-     * mark whose HEIGHT is its root, so the shape of the progression -- rising,
-     * falling, the drop into the vi -- reads at a glance, and changing a root
-     * visibly moves it. Selection is a full-height tick behind the mark, which
-     * cannot be confused with pitch because it spans the whole cell.
-     */
-    drawCell(ctx, payload) {
-        const w = ctx.width, h = ctx.height;
-        if (w < 8 || h < 6) return;
-        const prog = parseProg((payload && payload.values || {}).prog);
-        if (!prog) return;
-
-        const n = prog.count;
-        const colW = Math.max(2, Math.floor(w / n));
-        const top = 3, bot = h - 2;   /* row 0 is the selection edge */
-
-        /* Scale to the roots actually present, so the contour uses the whole
-         * cell whatever octave the progression sits in. */
-        let lo = 127, hi = 0;
-        for (const c of prog.chords) {
-            if (c.rest || !c.notes.length) continue;
-            const r = c.notes[0];
-            if (r < lo) lo = r;
-            if (r > hi) hi = r;
-        }
-        const span = Math.max(1, hi - lo);
-
-        for (let k = 0; k < n; k++) {
-            const c = prog.chords[k];
-            const x = k * colW;
-            const bw = Math.max(1, colW - 1);
-
-            /* THREE SIGNALS, THREE PLACES. Selection was a full-height dotted
-             * column, which ran through the contour mark and made the selected
-             * chord the hardest one to read. It lives on the top edge now,
-             * where nothing else draws; the contour owns the middle; a rest
-             * owns a short dash on the baseline. None can be mistaken for
-             * another, and none is the absence of another. */
-            if (k === prog.sel - 1) ctx.fillRect(x, 0, bw, 1, 1);
-            if (c.rest || !c.notes.length) {
-                const d = Math.max(1, Math.floor(bw / 2));
-                ctx.fillRect(x + Math.floor((bw - d) / 2), bot, d, 1, 1);
-                continue;
-            }
-            const y = hi === lo ? Math.floor((top + bot) / 2)
-                                : bot - Math.round(((c.notes[0] - lo) / span) * (bot - top));
-            ctx.fillRect(x, y - 1, bw, 2, 1);
         }
     },
 };

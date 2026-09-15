@@ -13,8 +13,8 @@
  *  - PARKED (globalThis.overtakeParked), a tick draws NOTHING and reads
  *    NOTHING: the host swapped the globals for no-ops and the param mailbox
  *    does not answer a parked module (phase 0 measured the give-ups).
- *  - Shift arrives as CC 49 and is read from the wire under S.overtake; the
- *    chain's pad block is never taken; onUnload leaves nothing sounding.
+ *  - Shift arrives as CC 49 and is read from the wire; no chain-era host
+ *    switch is ever touched; onUnload leaves nothing sounding.
  */
 import { readFileSync } from "node:fs";
 
@@ -55,9 +55,7 @@ const check = (what, got, want) => {
 
 /* --- init: opens under the overtake flag, never takes the chain's pad block, draws --- */
 g.init();
-check("init raised STACKS_OVERTAKE", g.STACKS_OVERTAKE, true);
-check("canvas.js saw the flag (S.overtake)", g.__S.overtake, true);
-check("chain pad block never taken", padBlock, null);
+check("no chain pad switch touched", padBlock, null);
 check("init drew the screen", calls.draw > 50, true);
 check("init cleared before drawing", calls.clear >= 1, true);
 check("init read prog", calls.get > 0, true);
