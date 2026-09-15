@@ -4,11 +4,25 @@
   "abbrev": "SK",
   "version": "0.1.0",
   "builtin": true,
-  "description": "Chord progression sequencer drawn on a staff. Import the playing clip or start fresh, then edit each chord's root, shape and length.",
+  "description": "Chord progressions drawn on a staff. Write one, hear it on a Move track, and let Move record it.",
   "author": "Schwung",
+  "component_type": "tool",
+  "dsp": "dsp.so",
+  "ui": "ui.js",
+  "web_ui": "web_ui.html",
+  "tool_config": {
+    "interactive": true,
+    "skip_file_browser": true,
+    "overtake": true
+  },
   "capabilities": {
-    "chainable": true,
-    "component_type": "midi_fx",
+    "midi_out": true,
+    "suspend_keeps_js": true,
+    "button_passthrough": [
+      85,
+      118
+    ],
+    "component_type": "tool",
     "canvas_script": "canvas.js",
     "chain_params": [
       {

@@ -960,6 +960,7 @@ typedef struct {
     stk_prog_t       staging;       /* written by worker only, before the store */
     atomic_int       status;        /* 0 idle, 1 working, 2 ok, 3 failed */
     int              recv_ch;       /* cached slot receive channel, for stamping */
+    int              track;         /* tool: the Move track (1-4) the output addresses */
 } stk_t;
 
 /* ======================================================================
@@ -2312,6 +2313,7 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     st->pat_cur = 0;   /* slot 1 is active, and empty */
     st->cur_step = -1;
     st->recv_ch = 1;
+    st->track = 1;
     for (int i = 0; i < STK_MAX_VOICES; i++) st->voice[i].note = -1;
     atomic_init(&st->quit, 0);
     atomic_init(&st->req_read, 0);
@@ -3490,6 +3492,11 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         }
     } else if (strcmp(key, "run") == 0) {
         st->run = (strcmp(val, "on") == 0 || atoi(val) == 1);
+    } else if (strcmp(key, "track") == 0) {
+        /* The tool's output channel, and the Song.abl track `read` imports
+         * from: Move's four tracks receive on channels 1-4. */
+        st->track = clampi(atoi(val), 1, 4);
+        st->recv_ch = st->track;
     } else if (strcmp(key, "preview") == 0) {
         static const char *const P[] = { "off", "chord", "loop" };
         int i = opt_index(val, P, 3);
@@ -4272,6 +4279,8 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
     if (strcmp(key, "steps") == 0) return snprintf(buf, buf_len, "%d", st->prog.count);
     if (strcmp(key, "rate") == 0)  return snprintf(buf, buf_len, "%s", RATE_OPTS[st->prog.rate]);
     if (strcmp(key, "run") == 0)   return snprintf(buf, buf_len, "%s", st->run ? "on" : "off");
+    if (strcmp(key, "track") == 0) return snprintf(buf, buf_len, "%d", st->track);
+    if (strcmp(key, "module_id") == 0) return snprintf(buf, buf_len, "stacks");
     if (strcmp(key, "preview") == 0) {
         static const char *const P[] = { "off", "chord", "loop" };
         return snprintf(buf, buf_len, "%s", P[clampi(st->preview, 0, 2)]);
@@ -4434,4 +4443,112 @@ static midi_fx_api_v1_t g_api = {
 midi_fx_api_v1_t* move_midi_fx_init(const host_api_v1_t *host) {
     g_host = host;
     return &g_api;
+}
+
+/* =====================================================================
+ * THE TOOL ENTRY (plugin_api_v2) -- an overtake DSP, addressing a Move track.
+ *
+ * Same instance, same state machine, same entry points: on_midi is
+ * stk_process_midi and render_block is stk_tick, and whatever they hand back
+ * is INJECTED into Move on cable 2 (host->midi_inject_to_move) on the
+ * channel of `track`, instead of being returned to a chain. Every test that
+ * drives the MIDI FX surface drives this one too, which is the point of
+ * keeping both symbols exported (the API header sanctions it).
+ *
+ * Two things the chain never sent that the shim sends an overtake DSP:
+ *
+ *   CABLE-0 NOTES ARE NOT PITCHES. Pad presses arrive on the audio thread as
+ *   pad IDENTIFIERS 68-99 and knob touches as notes 0-9, tagged
+ *   MOVE_MIDI_SOURCE_INTERNAL. A pad id would enter the pitch-class selector
+ *   as a note -- 68 is G#, chord 9 -- so they are dropped here; the UI owns
+ *   the pads and writes params.
+ *
+ *   ITS OWN OUTPUT COMES BACK. Move echoes injected notes on MIDI_OUT cable 2
+ *   and the shim routes MIDI_OUT to the overtake DSP, so the sounding-voices
+ *   filter inside stk_process_midi is still load-bearing (see
+ *   tests/test_stacks_own_tail.sh).
+ * ===================================================================== */
+#define STK_TOOL_MAX_OUT 32
+
+static void tool_inject(stk_t *st, uint8_t out[][3], int lens[], int n) {
+    if (!g_host || !g_host->midi_inject_to_move) return;
+    /* SPIKE TRACE (phase 0): the overtake inject ring drains silently, so
+     * this is the only evidence a packet was produced. Removed in phase 1. */
+    if (n > 0 && g_host->log) {
+        char m[96];
+        snprintf(m, sizeof m, "stacks tool: inject %d pkts, first %02x %02x %02x ch%d",
+                 n, out[0][0], out[0][1], out[0][2], st->track);
+        g_host->log(m);
+    }
+    uint8_t ch = (uint8_t)((st->track - 1) & 0x0F);
+    for (int i = 0; i < n; i++) {
+        if (lens[i] < 2) continue;
+        uint8_t type = out[i][0] & 0xF0;
+        if (type < 0x80 || type >= 0xF0) continue;   /* channel voice only */
+        /* USB-MIDI: cable 2, and the CIN is the status nibble for every
+         * channel-voice type (0x8 note-off ... 0xE bend). */
+        uint8_t pkt[4] = {
+            (uint8_t)((2 << 4) | (type >> 4)),
+            (uint8_t)(type | ch),
+            out[i][1],
+            (uint8_t)(lens[i] >= 3 ? out[i][2] : 0),
+        };
+        g_host->midi_inject_to_move(pkt, 4);
+    }
+}
+
+static void tool_on_midi(void *instance, const uint8_t *msg, int len, int source) {
+    stk_t *st = (stk_t *)instance;
+    if (!st || !msg || len < 1) return;
+    uint8_t type = msg[0] & 0xF0;
+    if (source == MOVE_MIDI_SOURCE_INTERNAL &&
+        (type == 0x80 || type == 0x90 || type == 0xA0))
+        return;                                   /* pad ids, not pitches */
+    uint8_t out[STK_TOOL_MAX_OUT][3];
+    int lens[STK_TOOL_MAX_OUT];
+    int n = stk_process_midi(st, msg, len, out, lens, STK_TOOL_MAX_OUT);
+    tool_inject(st, out, lens, n);
+}
+
+static void tool_render_block(void *instance, int16_t *out_lr, int frames) {
+    stk_t *st = (stk_t *)instance;
+    if (out_lr && frames > 0)
+        memset(out_lr, 0, (size_t)frames * 2 * sizeof(int16_t));   /* silent */
+    if (!st || frames <= 0) return;
+    uint8_t out[STK_TOOL_MAX_OUT][3];
+    int lens[STK_TOOL_MAX_OUT];
+    int n = stk_tick(st, frames, 44100, out, lens, STK_TOOL_MAX_OUT);
+    tool_inject(st, out, lens, n);
+}
+
+static int tool_get_error(void *instance, char *buf, int buf_len) {
+    (void)instance;
+    if (buf && buf_len > 0) buf[0] = 0;
+    return 0;
+}
+
+static void tool_set_param(void *instance, const char *key, const char *val) {
+    /* SPIKE TRACE (phase 0). Removed in phase 1. */
+    if (g_host && g_host->log && key && val) {
+        char m[160];
+        snprintf(m, sizeof m, "stacks tool: set %s=%.60s", key, val);
+        g_host->log(m);
+    }
+    stk_set_param(instance, key, val);
+}
+
+static plugin_api_v2_t g_tool_api = {
+    .api_version      = MOVE_PLUGIN_API_VERSION_2,
+    .create_instance  = stk_create,
+    .destroy_instance = stk_destroy,
+    .on_midi          = tool_on_midi,
+    .set_param        = tool_set_param,
+    .get_param        = stk_get_param,
+    .get_error        = tool_get_error,
+    .render_block     = tool_render_block,
+};
+
+plugin_api_v2_t* move_plugin_init_v2(const host_api_v1_t *host) {
+    g_host = host;
+    return &g_tool_api;
 }

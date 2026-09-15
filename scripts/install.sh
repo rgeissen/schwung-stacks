@@ -28,7 +28,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARBALL="$ROOT/dist/stacks-module.tar.gz"
 [ -f "$TARBALL" ] || { echo "no dist/stacks-module.tar.gz -- run scripts/build.sh first" >&2; exit 1; }
 
-DEST="/data/UserData/schwung/modules/midi_fx"
+# A tool lives under modules/tools; the Tools menu scans nothing else.
+DEST="/data/UserData/schwung/modules/tools"
 echo "Installing to $USER_NAME@$HOST:$DEST/stacks"
 scp -q "$TARBALL" "$USER_NAME@$HOST:/data/UserData/stacks-module.tar.gz"
 ssh "$USER_NAME@$HOST" "mkdir -p '$DEST' && tar -xzf /data/UserData/stacks-module.tar.gz -C '$DEST' && rm -f /data/UserData/stacks-module.tar.gz && ls -l '$DEST/stacks'"

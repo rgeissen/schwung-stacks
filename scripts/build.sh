@@ -33,7 +33,7 @@ echo "Compiling dsp.so..."
     -o "dist/$ID/dsp.so" \
     -Isrc -lm -lpthread
 
-cp src/module.json src/help.json src/canvas.js src/web_ui.html "dist/$ID/"
+cp src/module.json src/help.json src/ui.js src/canvas.js src/web_ui.html "dist/$ID/"
 
 # A module tarball unpacks to <id>/, which is what install-module expects.
 tar -czf "dist/$ID-module.tar.gz" -C dist "$ID"
