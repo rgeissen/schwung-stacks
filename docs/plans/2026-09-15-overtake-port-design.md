@@ -270,7 +270,7 @@ read in `create_instance`. TB-3PO does the same.
   - `test_host_abi_pinned.sh` — unchanged; the port uses no callback the pin
     does not carry.
 
-## Phases
+## Phases (all landed 2026-09-15; the commits are the record)
 
 0. **Prove the path on the device** — manifest + DSP as a tool with a
    ten-line `ui.js` (title + Play). Verify: Tools menu entry, cable-0 clock

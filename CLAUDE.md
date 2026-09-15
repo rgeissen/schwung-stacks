@@ -1,11 +1,18 @@
 # CLAUDE.md — Stacks
 
-A chord-progression MIDI FX for Ableton Move, running under
-[Schwung](https://github.com/charlesvestal/schwung). Three surfaces, one module:
+A chord-progression **overtake tool** for Ableton Move, running under
+[Schwung](https://github.com/charlesvestal/schwung) and opened from its Tools
+menu. Four files, one module:
 
-    src/dsp/stacks.c    the DSP -- harmony, the scheduler, the clip reader/stamp
-    src/canvas.js       the Move's own screen (a 128x64 takeover) and its grid cell
-    src/web_ui.html     the Remote UI panel, served by schwung-manager in a browser
+    src/dsp/stacks.c    the DSP -- harmony, the scheduler, the clip reader; injects to a Move track
+    src/canvas.js       the whole 128x64 surface: the roll, the banks, the pads, the gestures
+    src/ui.js           the overtake lifecycle around canvas.js (the `ctx` it was written for)
+    src/web_ui.html     the Remote UI panel, served by schwung-manager under the Tool tab
+
+It was a chain MIDI FX until 2026-09-15. The port, and why, is
+`docs/plans/2026-09-15-overtake-port-design.md`; the short version is
+Charles's: a module that wants the pads and the knobs is an overtake, and
+slot modules must not touch Move's native UI.
 
 ## Build, install, test
 
@@ -25,43 +32,73 @@ host does not provide reads one field past the struct, passes its own
 `if (host->fn)` guard, and boot-loops the device.
 
 Anything this module needs that Schwung does not offer is a PULL REQUEST to
-Schwung, never a local patch. Two such capabilities exist today and both are
-general, not Stacks-specific:
+Schwung, never a local patch. As an overtake it needs nothing today. One host
+finding is open: `button_passthrough` is honoured for Play (85) and not for
+Record (118) while a tool is on screen -- measured 2026-09-15, neither Move
+nor the module sees the press -- which is why a stamp is recorded after Back.
 
-  * `canvas_overlay.onPoll` -- a takeover's only way to read a param between
-    inputs (`draw`/`tick` have the accessors stripped, deliberately);
-  * the Remote UI's refresh of `viz.extra_keys` on change plus a heartbeat --
-    derived values are named by no write, and the transport by nothing at all.
+## THE HOST CONTRACT, in the order it bit
 
-Without them the module still works; the two surfaces just stop following each
-other live.
+- **An overtake owns the surface, and nothing else.** Every pad, knob and
+  button is the tool's while it is up; the host clears every LED on the way in
+  and on the way out; there is no `host_pad_block` to take and no CC to claim
+  -- the chain-era reconciler, the claims and the pad-LED snapshot all went
+  with the chain. The two exceptions are declared: Play and Record pass
+  through to Move.
+- **The DSP is the same state machine.** `plugin_api_v2` is an ADAPTER beside
+  the MIDI FX entry points: `on_midi` is `stk_process_midi`, `render_block` is
+  `stk_tick`, and what they return is injected into Move on cable 2
+  (`host->midi_inject_to_move`) on the channel of `track`. Both init symbols
+  are exported, so every DSP test drives the same code through the MIDI FX
+  surface. Cable-0 notes tagged INTERNAL are pad IDENTIFIERS (68 is G#, chord
+  9 by pitch class) and are dropped before the selector; Move's echo of our
+  own output comes back, so the own-tail filter stays load-bearing.
+- **ui.js is the `ctx`.** canvas.js derives every size from `ctx` and never
+  reaches absolute space, so the port was an adapter: the overtake draw
+  globals, method for method, and the lifecycle (`init` -> `onOpen`, `tick`
+  -> `tick` + `draw` at ~30fps + `onPoll` at 250ms, `onResume`, `onUnload` ->
+  `onClose`). Every ctx method reaches for the global BY NAME at call time:
+  the host swaps them for no-ops while the tool is parked.
+- **Parked, touch nothing.** Back suspends (`suspend_keeps_js`): the DSP keeps
+  ticking -- an armed take goes on waiting for Move's Start -- and `tick()`
+  keeps firing with `globalThis.overtakeParked` raised. A parked tick draws
+  nothing and reads nothing: the param mailbox does not answer a parked
+  module (a give-up per poll, measured), and a picture nobody sees is not
+  worth the reads. `tests/test_stacks_ui_lifecycle.sh`.
+- **Shift arrives.** As CC 49, forwarded to an overtake -- and the shim's own
+  Shift tracking is documented as not working in that mode -- so canvas.js
+  records it from the wire and never asks. One recorder site; gestures read
+  `shiftHeld()`. (On the chain it was the opposite, and a `d1 === 49` branch
+  was dead code that looked like a feature.)
+- **The panel comes through the Tool tab.** The manager discovers the tool by
+  `module_id`, seeds the browser from `state` -- a FLAT MAP of strings, the
+  save blob first under `s` so a restore still finds it, then every readable
+  param walked from the one declaration -- and re-reads it only when
+  `rui_poll`'s rev moves. So rev bumps on everything snapshot-visible: every
+  write at the door, a parse landing, a status transition. The transport is
+  `rui_play` pushes, not a param. `tests/test_stacks_tool_tab.sh`.
 
-## Song.abl is READ-ONLY everywhere except this module's opt-in stamp
+## Song.abl is READ-ONLY
 
-The `stacks` MIDI FX (`src/`) is the first thing here
-that both reads and writes Move's set file, and the two directions are not
-symmetric. Reading is free; **writing fights Move**, which holds the set in
-memory and autosaves over it — so `stamp_mode` defaults to **rec arm** (inject
-into a record-armed track and let Move's own code write the clip) and the
-direct write is opt-in. The write is a **text splice** of the clip's `notes`
-array into a temp file plus a rename, never a re-serialisation: a set carries a
-great deal this module does not understand, and re-emitting it is how that gets
-lost.
+Reading a clip is free. **Writing fights Move**, which holds the set in memory
+and autosaves over it (a spliced file was overwritten 142 seconds later with
+nothing touched), and Schwung's rule is to work within Move's workflow rather
+than override it. So there is no file stamp: Stamp ARMS, the user presses
+Record on Move, and the module plays exactly one lap on Move's downbeat for
+Move's own recorder to capture. The splice-and-rename writer is in git.
 
-Three rules it exists to demonstrate, all of them things an author otherwise
+Rules the DSP exists to demonstrate, all of them things an author otherwise
 gets wrong:
 
-- **A MIDI FX entry point is the SPI callback, so the parse is not there.**
+- **An entry point is the SPI callback, so the parse is not there.**
   `set_param` bumps an atomic counter; a worker created with
   `PTHREAD_EXPLICIT_SCHED` + `SCHED_OTHER` parses and publishes with a
   release-store that `tick` acquires. Inheriting the callback's FIFO 70 starves
   Move's `Link Main` at 35. This is the granny bug avoided by construction.
-- **A module page can be a PICTURE, and it costs ONE read.** `view` is
-  `type: "canvas"` + `as_page`, and the whole progression — names, lengths,
-  offsets, resolved pitches, the scale mask — arrives as a single
-  `viz.extra_keys` value. The C side publishes **resolved** notes so voicing is
-  not implemented twice and the staff cannot draw a chord the synth never
-  played.
+- **The picture costs ONE read.** The whole progression — names, lengths,
+  offsets, resolved pitches, the scale mask — is a single `prog` value. The C
+  side publishes **resolved** notes so voicing is not implemented twice and
+  the staff cannot draw a chord the synth never played.
 - **Humanise is a HASH, not a generator.** The deviation for one note is a pure
   function of (seed, chord, voice), so the feel repeats until Randomize is
   pressed and **Stamp writes the take Preview played**. A per-pass `rand()`
@@ -80,16 +117,16 @@ gets wrong:
   absolute duration now -- eighths of a bar, always -- and Rate only chooses
   what a NEW chord gets. The fix DELETED code, which is the usual sign the cut
   is in the right place.
-- **REC-ARM STAMPING HAD NO STATE, so it read as a dead button.** It does not
-  write a clip -- it ARMS, waits for Move's downbeat and plays exactly one lap
-  for Move to record -- and the module set no `status` for any of that, so the
+- **STAMPING HAD NO STATE, so it read as a dead button.** It does not write a
+  clip -- it ARMS, waits for Move's downbeat and plays exactly one lap for
+  Move to record -- and the module set no `status` for any of that, so the
   panel invented an armed flag of its own, started when IT pressed the button.
   A stamp armed from the MOVE therefore lit nothing anywhere ("stamping on the
   Move doesn't work", for a mechanism that was working the whole time), and a
   transport stop cancelled the arm while the browser went on saying ARMED.
-  `status` publishes `armed` now, both surfaces read it, the takeover blinks a
-  mark and toasts `REC + PLAY` (it cannot press Record itself -- the shim
-  claims CC 118). Arming also PARKS `run` so nothing sounds before the
+  `status` publishes `armed` now, both surfaces read it, the surface blinks a
+  mark and toasts `BACK, REC ON MOVE` (it cannot press Record itself, and
+  the shim swallows the button while the tool is up). Arming also PARKS `run` so nothing sounds before the
   downbeat, and **every exit must put it back**: a cancel, and the take itself.
   Stopping after one lap REQUIRES `run = 0` (the sequencer follows it, and the
   alternative is stopping Move), but leaving it off is an action silently
@@ -175,37 +212,19 @@ gets wrong:
   Play puts back). The latch is the real hazard: a pointer lost to a
   re-render, a tab closed mid-press, or a claimed CC whose release the shim
   withheld leaves `hold_run` set for the session with nothing on either screen
-  able to stop it -- so the takeover releases the hold in `onClose` and the
+  able to stop it -- so the surface releases the hold in `onClose` and the
   panel does on `pagehide`/`visibilitychange`.
-- **Shift belongs to the HOST on a claimed CC.** Shift+Copy / Shift+Delete are
-  Schwung's snapshot and recall, and the shim withholds a shift-held press from
-  a claimed CC entirely -- "the module gets the BARE buttons only". A
-  `shiftHeld()` branch inside a Copy/Undo/Delete handler is unreachable code
-  that reads as a working feature, which is exactly what shipped: Double Length
-  on Shift+Copy and Redo on Shift+Undo were both documented and both dead,
-  while Mute+Copy and Mute+Undo worked by accident. Use MUTE, which is
-  forwarded. The JOG is unaffected -- a different claim path, so Shift+Jog and
-  Shift+Click do work. `tools/check_edit_cc_modifier.py`.
-- **Shared controls are RECONCILED from the screen, never bookkept** — the CC
-  claim and `host_pad_block` are both GLOBAL, and a UI that strands one costs
-  every later module that control until a reboot. `reconcilePadBlock()` only
-  ever CLEARS, tests whether the display is SHOWING (not just the view), and
-  RESTORES Move's pad LEDs rather than darkening them. `docs/SHADOW_UI.md`.
-- **A TAKEOVER MUST BE ABLE TO ASK AGAIN, and a frame is not the place.**
-  `draw` and `tick` are DRAW_PATH_HOOKS with the accessors stripped, so a
-  takeover used to read only on its own input -- and it owns the screen for
-  minutes while a worker finishes or a **Remote UI panel edits the same module
-  from a browser**. `onPoll` is the event on a metronome: optional, full ctx,
-  at most one call per `CANVAS_POLL_MS` (250ms, ~1% of the budget). Read a
-  handful of keys there, never a page -- stacks reads `prog` (one read, the
-  whole picture) and buys its dozen-read bank refresh only when that picture
-  says the values changed, which is why the staleness signature must exclude
-  every time-varying field or it says "stale" four times a second forever.
-- **A long press cannot ACT at the threshold.** `tick` is a DRAW_PATH_HOOK, so
-  the runtime strips getParam/setParam from its context: it can see the
-  threshold pass and DRAW that, but the action waits for the release, where
-  `onMidi` has setParam again. Which is no bad thing -- the screen can say what
-  the release will do while you are still holding.
+- **A SURFACE THAT OWNS THE SCREEN FOR MINUTES MUST ASK AGAIN, and a frame is
+  not the place.** `draw` and `tick` read nothing; `onPoll` is the event on a
+  metronome, 250ms, and reads a handful of keys, never a page -- `prog` (one
+  read, the whole picture), `status`, `patterns` -- and buys the dozen-read
+  bank refresh only when that picture says the values changed, which is why
+  the staleness signature must exclude every time-varying field or it says
+  "stale" four times a second forever.
+- **A long press acts on the RELEASE, not at the threshold.** `tick` sees the
+  threshold pass and DRAWS that; the action waits for the release in
+  `onMidi`. Which is no bad thing -- the screen can say what the release will
+  do while you are still holding.
 - **A rule enforced at call sites is a rule that will be missed.** "Grow the
   clip to hold the music" was four copies of the same arithmetic, so `len`,
   `off`, `insert` and `remove` never got it and each silently pushed the
@@ -215,5 +234,6 @@ gets wrong:
 
 `tests/test_stacks_shapes.sh` pins the shape table against the contract
 (the 38 shapes are declared in both C and `module.json`), the family runs being
-contiguous, and both realtime rules above. `test_stacks_clip_length.sh` walks
+contiguous, the manifest being a tool's, and both realtime rules above.
+`test_stacks_tool_inject.sh` drives a lap through the tool entry. `test_stacks_clip_length.sh` walks
 every door that changes how much music there is.

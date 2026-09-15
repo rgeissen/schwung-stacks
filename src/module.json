@@ -2,7 +2,7 @@
   "id": "stacks",
   "name": "Stacks",
   "abbrev": "SK",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "builtin": true,
   "description": "Chord progressions drawn on a staff. Write one, hear it on a Move track, and let Move record it.",
   "author": "Schwung",
