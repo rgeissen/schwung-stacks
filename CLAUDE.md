@@ -64,12 +64,19 @@ nor the module sees the press -- which is why a stamp is recorded after Back.
   -> `tick` + `draw` at ~30fps + `onPoll` at 250ms, `onResume`, `onUnload` ->
   `onClose`). Every ctx method reaches for the global BY NAME at call time:
   the host swaps them for no-ops while the tool is parked.
-- **Parked, touch nothing.** Back suspends (`suspend_keeps_js`): the DSP keeps
-  ticking -- an armed take goes on waiting for Move's Start -- and `tick()`
-  keeps firing with `globalThis.overtakeParked` raised. A parked tick draws
-  nothing and reads nothing: the param mailbox does not answer a parked
-  module (a give-up per poll, measured), and a picture nobody sees is not
-  worth the reads. `tests/test_stacks_ui_lifecycle.sh`.
+- **Parked, touch nothing -- and play only for a take.** Back suspends
+  (`suspend_keeps_js`): the DSP keeps ticking -- an armed take goes on
+  waiting for Move's Start -- and `tick()` keeps firing with
+  `globalThis.overtakeParked` raised. A parked tick draws nothing and reads
+  nothing: the param mailbox does not answer a parked module (a give-up per
+  poll, measured), and a picture nobody sees is not worth the reads. It
+  WRITES once: `parked=on`. Move plays an injected note on whichever track is
+  SELECTED, not on a channel, so a parked tool following the transport or
+  looping lands on every track you touch afterwards ("the other track plays
+  the stamped notes too"). So parking switches Run and the loop off unless a
+  take is armed or under way, and resume gives them back -- including the
+  Run a take parked, which now returns on resume rather than at the
+  transport stop. `tests/test_stacks_parked.sh`.
 - **Shift arrives.** As CC 49, forwarded to an overtake -- and the shim's own
   Shift tracking is documented as not working in that mode -- so canvas.js
   records it from the wire and never asks. One recorder site; gestures read

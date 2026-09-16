@@ -73,17 +73,19 @@ const getsBefore = calls.get;
 t += 300; g.tick();
 check("a tick 300ms later polls", calls.get > getsBefore, true);
 
-/* --- parked: nothing drawn, nothing read --- */
-calls.draw = 0; calls.get = 0; calls.clear = 0;
+/* --- parked: nothing drawn, nothing read, and the DSP told ONCE --- */
+calls.draw = 0; calls.get = 0; calls.clear = 0; calls.set = [];
 g.overtakeParked = true;
 t += 1000; g.tick(); t += 1000; g.tick();
 check("parked tick draws nothing", calls.draw + calls.clear, 0);
 check("parked tick reads nothing", calls.get, 0);
+check("the park is written to the DSP once", calls.set.filter((s) => s === "parked=on").length, 1);
 g.overtakeParked = false;
 
-/* --- resume: caches dropped, then a repaint on the next tick --- */
-LEDS = []; calls.clear = 0;
+/* --- resume: the DSP told, caches dropped, then a repaint on the next tick --- */
+LEDS = []; calls.clear = 0; calls.set = [];
 g.onResume();
+check("resume writes parked=off", calls.set.includes("parked=off"), true);
 g.tick();
 check("resume repaints on the next tick", calls.clear, 1);
 check("resume re-emits the pad row", LEDS.some((m) => m[2] >= 68 && m[2] < 76), true);

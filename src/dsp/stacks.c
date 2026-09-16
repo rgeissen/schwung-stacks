@@ -1069,6 +1069,23 @@ typedef struct {
     int at_downbeat;     /* Start seen, its first clock not yet counted */
     int stamp_run_prev;  /* what Run was before arming turned it off */
     int stamp_restore;   /* Run is owed back once the take's transport stops */
+    /*
+     * PARKED, STACKS PLAYS ONLY FOR A TAKE IT ARMED.
+     *
+     * Back parks the tool and the host keeps the DSP ticking, which the
+     * stamp needs: arm, Back, Record on Move, and the lap plays from the
+     * background. But Move plays an injected note on whichever track is
+     * SELECTED, not on a channel -- so a parked Stacks that goes on following
+     * Move's transport, or looping its preview, lands on every track you
+     * touch afterwards. Heard as "the other track plays the stamped notes
+     * too". So parking switches Run and the loop off unless a take is armed
+     * or under way, and resuming puts back what it found -- including a Run
+     * the take itself parked, which used to return on the transport stop and
+     * now returns when you come back to the screen that can see it.
+     */
+    int parked;
+    int park_run_prev;
+    int park_preview_prev;
     double pulse_accum; /* internal clock, for preview with the transport stopped */
 
     /* --- worker handshake (see the REALTIME note at the top) --- */
@@ -2503,10 +2520,11 @@ static int stk_process_midi(void *instance, const uint8_t *in, int in_len,
             atomic_store(&st->status, 0);
             st->run = st->stamp_run_prev;
         }
-        if (st->stamp_restore) {       /* the take is over: give Run back */
+        if (st->stamp_restore && !st->parked) {   /* the take is over: give Run back */
             st->run = 1;
             st->stamp_restore = 0;
         }
+        /* Parked: the restore waits for resume -- see `parked` in set_param. */
         st->stamp_armed = 0;
         st->armed_id = 0;
         st->pend_n = 0;
@@ -3542,6 +3560,25 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         }
     } else if (strcmp(key, "run") == 0) {
         st->run = (strcmp(val, "on") == 0 || atoi(val) == 1);
+    } else if (strcmp(key, "parked") == 0) {
+        int p = (strcmp(val, "on") == 0 || atoi(val) == 1);
+        if (p && !st->parked) {
+            st->parked = 1;
+            st->park_run_prev = st->run;
+            st->park_preview_prev = st->preview;
+            /* A take that is armed or under way keeps Run as the stamp set
+             * it; anything else stops following the transport. */
+            if (!st->stamp_armed && !st->stamp_once) st->run = 0;
+            if (st->preview == 2) st->preview = 0;
+            st->hold_run = 0;
+            st->cut_pending = 1;           /* nothing rings on into Move's screen */
+        } else if (!p && st->parked) {
+            st->parked = 0;
+            /* Give back what parking took, and what a take parked meanwhile. */
+            if (st->park_run_prev || st->stamp_restore) st->run = 1;
+            st->stamp_restore = 0;
+            if (st->park_preview_prev == 2 && !st->clock_running) st->preview = 2;
+        }
     } else if (strcmp(key, "track") == 0) {
         /* The tool's output channel, and the Song.abl track `read` imports
          * from: Move's four tracks receive on channels 1-4. */
@@ -4361,6 +4398,7 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
     if (strcmp(key, "rate") == 0)  return snprintf(buf, buf_len, "%s", RATE_OPTS[st->prog.rate]);
     if (strcmp(key, "run") == 0)   return snprintf(buf, buf_len, "%s", st->run ? "on" : "off");
     if (strcmp(key, "track") == 0) return snprintf(buf, buf_len, "%d", st->track);
+    if (strcmp(key, "parked") == 0) return snprintf(buf, buf_len, "%s", st->parked ? "on" : "off");
     if (strcmp(key, "module_id") == 0) return snprintf(buf, buf_len, "stacks");
     if (strcmp(key, "rui_poll") == 0) {
         /*

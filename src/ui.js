@@ -65,6 +65,7 @@ const ctx = {
 let lastDraw = 0;
 let lastPoll = 0;
 let open = false;
+let wasParked = false;
 
 function parked() { return globalThis.overtakeParked === true; }
 
@@ -78,13 +79,27 @@ globalThis.init = function () {
 };
 
 globalThis.onResume = function () {
+    wasParked = false;
+    ctx.setParam("parked", "off");   /* give back Run and the loop -- see the DSP */
     ov.onResume(ctx);
     lastDraw = 0;          /* repaint on the next tick */
     lastPoll = Date.now();
 };
 
 globalThis.tick = function () {
-    if (!open || parked()) return;
+    if (!open) return;
+    if (parked()) {
+        /*
+         * The Back button never reaches us, so the park is learned from the
+         * first background tick. Said to the DSP ONCE: parked, Stacks plays
+         * only for a take it armed -- Move puts an injected note on whichever
+         * track is selected, so a tool following the transport from the
+         * background lands on every track you touch. The host swaps in this
+         * module's own param shim for a parked tick, so the write arrives.
+         */
+        if (!wasParked) { wasParked = true; ctx.setParam("parked", "on"); }
+        return;
+    }
     const now = Date.now();
     ov.tick(ctx);
     if (now - lastPoll >= POLL_MS) {
