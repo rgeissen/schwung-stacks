@@ -9,7 +9,7 @@ clip. It is edited from two places at once — the Move's own screen and a
 Remote UI panel in the browser's Tool tab — and both show the same selection,
 the same playhead and the same transport.
 
-* **38 chord shapes** in six families, 24 rhythm figures, 10 voicing colours,
+* **38 chord shapes** in six families, 35 rhythm figures, 10 voicing colours,
   and a library of 140+ progressions filed under 17 genres — house, deep and
   melodic house, lo-fi, cinematic and the melancholic end of pop among them.
 * **The staff is the picture**: pitches, the rhythm as the hits it plays, the

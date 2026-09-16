@@ -16,6 +16,19 @@ hand-kept, and why test_stacks_shapes.sh fails on drift.
 import json, re, sys, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+CHECK = "--check" in sys.argv
+drift = []
+def emit(path, new):
+    """Write, or in --check mode record drift without touching the file --
+    a check that rewrites what it checks hides the very drift it exists to
+    report."""
+    old = path.read_text() if path.exists() else None
+    if new == old:
+        return
+    if CHECK:
+        drift.append(path.name)
+    else:
+        path.write_text(new)
 MJ = ROOT / "src/module.json"
 C = ROOT / "src/dsp/stacks.c"
 CJS = ROOT / "src/canvas.js"
@@ -34,6 +47,24 @@ shape_opts = re.findall(r'\{\s*"([^"]+)",\s*"[^"]*",\s*FAM_', tbl)
 fam_opts = [x.strip().strip('"') for x in
             re.search(r'FAMILIES\[\] = \{([^}]*)\}', csrc).group(1).split(',') if x.strip()]
 
+# --- rhythms: ONE table, four copies, all written from here ---------------
+# RHYTHMS[] is the truth: the manifest's option list, the panel's mask map
+# (it DRAWS the figure, and a hand-kept copy drew tresillo as 0x0491 against
+# the DSP's 0x4949 -- a picture of a rhythm the synth never played), and the
+# pad row's name list. A figure added to C appears everywhere or nowhere.
+rt = csrc[csrc.index('static const stk_rhythm_t RHYTHMS[] = {'):]
+rt = rt[:rt.index('#undef B')]
+rhythms = []
+for m in re.finditer(r'\{\s*"([^"]+)",\s*([^}]*)\}', rt):
+    name, expr = m.group(1), m.group(2)
+    mask = 0xFFFF if '0xFFFF' in expr else 0
+    for b in re.findall(r'B\((\d+)\)', expr):
+        mask |= 1 << int(b)
+    rhythms.append((name, mask))
+rhythm_names = [n for n, _ in rhythms]
+if len(rhythm_names) != len(set(rhythm_names)):
+    sys.exit("RHYTHMS[] has a duplicate name")
+
 mj = json.load(MJ.open())
 for e in mj["capabilities"]["chain_params"]:
     if e.get("key") == "shape":
@@ -41,6 +72,9 @@ for e in mj["capabilities"]["chain_params"]:
         e["default"] = shape_opts.index("maj")
     elif e.get("key") == "family":
         e["options"] = fam_opts
+    elif e.get("key") == "rhythm":
+        e["options"] = rhythm_names
+        e["default"] = rhythm_names.index("hold")
 # ui_hierarchy is AUTHORED, never generated. It used to be rewritten from
 # chain_params here, which was fine while the contract was one flat level and
 # actively wrong once it had branches: it put every per-chord param back on
@@ -48,7 +82,7 @@ for e in mj["capabilities"]["chain_params"]:
 # four continuation pages of the same keys. The planner builds a level's
 # overflow pages from that level's own `params` (page_plan.mjs: paramKeys),
 # so what root lists is exactly what root pages.
-MJ.write_text(json.dumps(mj, indent=2) + "\n")
+emit(MJ, json.dumps(mj, indent=2) + "\n")
 
 # --- ranges for the takeover's knob LEDs ---------------------------------
 # The LED intensity is the parameter's value normalised 0..1, and the overlay
@@ -65,13 +99,30 @@ rng_js = json.dumps(ranges, separators=(",", ":"))
 RB = "/* ---- BEGIN GENERATED ranges (tools/gen_chain_params.py) ---- */"
 RE_ = "/* ---- END GENERATED ranges ---- */"
 cjs = CJS.read_text()
-block = f"{RB}\nconst PARAM_RANGES = {rng_js};\n{RE_}"
+names_js = json.dumps(rhythm_names, separators=(",", ":"))
+block = f"{RB}\nconst PARAM_RANGES = {rng_js};\nconst RHYTHM_NAMES = {names_js};\n{RE_}"
 if RB in cjs:
     cjs = re.sub(re.escape(RB) + r".*?" + re.escape(RE_), lambda _m: block, cjs, flags=re.S)
 else:
     anchor = "const BANKS = ["
     cjs = cjs.replace(anchor, block + "\n\n" + anchor, 1)
-CJS.write_text(cjs)
+emit(CJS, cjs)
+cjs_after_ranges = cjs
+
+# --- the panel's mask map, drawn from the same table ----------------------
+WUI = ROOT / "src/web_ui.html"
+WB = "/* ---- BEGIN GENERATED rhythms (tools/gen_chain_params.py) ---- */"
+WE = "/* ---- END GENERATED rhythms ---- */"
+wui = WUI.read_text()
+rhy_js = ",".join(f'"{n}":0x{m:04X}' for n, m in rhythms)
+wblock = f"{WB}\nvar RHY = {{{rhy_js}}};\n{WE}"
+if WB in wui:
+    wui_new = re.sub(re.escape(WB) + r".*?" + re.escape(WE), lambda _m: wblock, wui, flags=re.S)
+else:
+    wui_new = re.sub(r"var RHY = \{.*?\};", lambda _m: wblock, wui, count=1, flags=re.S)
+if wui_new == wui and WB not in wui:
+    sys.exit("web_ui.html: found no `var RHY = {...};` to replace")
+emit(WUI, wui_new)
 
 # --- BANKS, from the levels ----------------------------------------------
 # Generated here rather than hand-kept: the banks ARE the levels, and every
@@ -106,12 +157,12 @@ for bname, lk in BANK_ORDER:
             cells.append(f'["{k}","{SHORT[k]}","{full}"]')
     rows.append(f'    {{ name: "{bname}", keys: [' + ", ".join(cells) + "] },")
 bank_js = "\n".join(rows)
-cjs = CJS.read_text()
+cjs = cjs_after_ranges          # the text as it should be, whether or not it was written
 bi = cjs.index("const BANKS = [")
 bj = cjs.index("];", bi) + 2
 head = cjs[bi:bj]
 head = head[:head.index("    { name:")]
-CJS.write_text(cjs[:bi] + head + bank_js + "\n];" + cjs[bj:])
+emit(CJS, cjs[:bi] + head + bank_js + "\n];" + cjs[bj:])
 
 params = mj["capabilities"]["chain_params"]
 compact = json.dumps(params, separators=(",", ":"))
@@ -134,7 +185,12 @@ else:
     anchor = "/* ======================================================================\n * The progression"
     new = src.replace(anchor, block + "\n\n" + anchor, 1)
 
-if "--check" in sys.argv:
-    sys.exit(0 if new == src else 1)
+if CHECK:
+    if new != src:
+        drift.append("stacks.c")
+    if drift:
+        print("stale: " + ", ".join(sorted(set(drift))))
+        sys.exit(1)
+    sys.exit(0)
 C.write_text(new)
 print(f"wrote {len(params)} params, {len(compact)} bytes of JSON into stacks.c")

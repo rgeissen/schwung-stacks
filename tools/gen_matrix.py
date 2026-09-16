@@ -118,7 +118,7 @@ DESC = {
  "cstrum":    "Spreads this chord's notes across time, lowest first &mdash; a strum rather than every note landing together.",
  "cgate":     "Offsets how much of this chord's length actually sounds, against the global <em>Gate</em>. Shorter reads as a stab.",
  "cmute":     "Silences this chord but keeps it in the progression. Drawn as an outline, so you can still see what it would play.",
- "rhythm":    "24 figures &mdash; the grid, syncopation, clave, jazz comping, rock, electronic. Each covers one BAR and repeats across the chord; <em>hold</em> strikes once and is held.",
+ "rhythm":    "35 figures &mdash; the grid, syncopation, clave, jazz comping, rock, house stabs, cinematic pulses. Each covers one BAR and repeats across the chord; <em>hold</em> strikes once and is held.",
  "ctrans":    "Transposes this chord in semitones after its shape is built, so the shape survives and only the pitch moves.",
 
  "octave":    "Transposes the whole progression at once. The per-chord <em>Transpose</em> on VOICE rides on top of this.",
@@ -246,7 +246,7 @@ GESTURES = [
     ("Pads, rows 2&ndash;4", "edit the selected chord", "one parameter per row, acting on whatever the bottom row selected. <strong>WRITE</strong> degree&middot;length&middot;quality, <strong>VOICE</strong> inversion&middot;colour&middot;octave, <strong>FEEL</strong> rhythm&middot;gate&middot;strum. A degree the scale does not have is dark and inert"),
     ("Pads, rows 2&ndash;3 <em>on PATTERNS</em>", "sixteen pattern slots", "the fourth page is not a row of values: it is the sixteen buffers. <strong>Tap</strong> goes to a slot &mdash; you are always IN one, and an empty slot is where the next pattern gets written. <strong>Hold</strong> copies what you are playing into that slot and carries on there. <strong>Mute + tap</strong> clears one. Dark is empty, blue holds music, gold is the slot you are in &mdash; and it lights as you write the first chord, because there is no save step"),
     ("Up / Down", "page the parameter rows", "the set of three above the chords. The chord row never moves"),
-    ("Left / Right", "scroll the parameter rows", "for lists longer than eight &mdash; 24 rhythms, 10 colours"),
+    ("Left / Right", "scroll the parameter rows", "for lists longer than eight &mdash; 35 rhythms, 10 colours"),
     ("Mute + Left/Right", "page the chord row", "chords 1&ndash;8, then 9&ndash;16, clamping at both ends. The rare action goes behind the modifier: most progressions are under eight chords, while the option lists are long"),
     ("Back", "park Stacks", "Move's screen comes back and the DSP keeps playing &mdash; an armed take goes on waiting for Record. Reopen from the Tools menu to resume where you were; <strong>Shift + Back</strong> exits"),
     ("CHD knob (Main)", "add several chords at once", "growing the count copies the last chord; while the buffer is still empty it divides the clip between the slots instead"),
@@ -352,7 +352,7 @@ NOTES = [
      "so the hand learns a PLACE rather than a sequence. <em>Up/Down</em> page the set of three "
      "and <em>Left/Right</em> scroll a row through a list longer than eight. The chords stay on "
      "<em>Mute&thinsp;+&thinsp;Left/Right</em>: the frequent action belongs on the bare button, "
-     "and most progressions are under eight chords while Rhythm has 24 figures."),
+     "and most progressions are under eight chords while Rhythm has 35 figures."),
     ("The pads are the tool's.",
      "Stacks is an <strong>overtake tool</strong>: while it is on screen every pad, knob and button "
      "is its own, and nothing underneath sees them. There is no switch to take and none to strand; "
@@ -437,7 +437,7 @@ NOTES = [
      "Eight cells is three glyphs each &mdash; enough to <em>label</em> a control and nowhere near "
      "enough to show its value. While a finger is on one knob the other seven labels are not "
      "needed, so the row becomes a status line for that one: full name, full value. It is what "
-     f"makes 24 rhythms and {N_PROGS} progressions readable at all."),
+     f"makes 35 rhythms and {N_PROGS} progressions readable at all."),
     ("Every knob shows its resting value.",
      "The <em>default</em> on each cell is what you get before you touch anything — the module "
      "boots into <em>A minor</em>, i&ndash;VI&ndash;III&ndash;VII. Triggers have none: they fire "

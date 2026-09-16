@@ -211,8 +211,9 @@ check("pad past the end is inert", writes.join(", ") || "(nothing)", "(nothing)"
   /* Back to FEEL: the scroll below is about a long VALUE row, and the store
      page has none -- it is sixteen slots, not a list to page through. */
   ov.onMidi(ctx, { data:[0xB0, 54, 127] });                 /* Down: -> FEEL */
-  ov.onMidi(ctx, { data:[0xB0, 63, 127] });                 /* scroll 24 rhythms */
-  check("a scroll says where in the list", /OF 24$/.test(S.toast), true);
+  ov.onMidi(ctx, { data:[0xB0, 63, 127] });                 /* scroll the rhythms */
+  /* The count is the DSP's table, not a number to remember here. */
+  check("a scroll says where in the list", /OF 35$/.test(S.toast), true);
   ov.onMidi(ctx, { data:[0xB0, 54, 127] });
   ov.onMidi(ctx, { data:[0xB0, 54, 127] });                 /* back to WRITE */
   ov.onMidi(ctx, { data:[0xB0, 88, 127] });

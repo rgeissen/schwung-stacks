@@ -1428,15 +1428,11 @@ function kbdControl(k){
 }
 
 /* ── RHYTHM: the figure, as the hits it plays ───────────────── */
-/* The masks live in the DSP; these are the same 24 figures, drawn.
+/* The masks live in the DSP; these are the same figures, drawn -- generated.
    A name cannot tell you what "baiao" sounds like; a pattern can. */
-var RHY = {
-  "hold":0x0001,"half":0x0101,"quarter":0x1111,"eighth":0x5555,"16th":0xFFFF,
-  "offbeat":0x4444,"dotted":0x0249,"push":0x2222,"tresillo":0x0491,"son 3-2":0x0499,
-  "son 2-3":0x9904,"rumba":0x0891,"bossa":0x2489,"baiao":0x1249,"montuno":0x5252,
-  "charl":0x1155,"charl 2":0x5511,"shuffle":0x1249,"comp":0x0505,"gallop":0x0707,
-  "drive":0x3333,"anthem":0x1015,"garage":0x2452,"broken":0x4912
-};
+/* ---- BEGIN GENERATED rhythms (tools/gen_chain_params.py) ---- */
+var RHY = {"hold":0x0001,"half":0x0101,"quarter":0x1111,"eighth":0x5555,"16th":0xFFFF,"offbeat":0x4444,"dotted":0x9249,"push":0x0180,"tresillo":0x4949,"son 3-2":0x1449,"son 2-3":0x4914,"rumba":0x1489,"bossa":0x2449,"baiao":0x0909,"montuno":0x4D4D,"charl":0x0041,"charl 2":0x0401,"shuffle":0x2121,"comp":0x0849,"gallop":0x1919,"drive":0x554D,"anthem":0x4141,"garage":0x0449,"broken":0x0441,"backbeat":0x1010,"deep stab":0x0404,"after kick":0x2222,"gate":0x9999,"two-step":0x0541,"one drop":0x0100,"heartbeat":0x0505,"in three":0x0821,"and four":0x1001,"anticipate":0x0081,"cascara":0xADAD};
+/* ---- END GENERATED rhythms ---- */
 function rhythmControl(k){
   var cur = get(k), opts = (META[k] && META[k].options) || Object.keys(RHY);
   var d = shell(name(k), null);
