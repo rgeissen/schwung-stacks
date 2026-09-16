@@ -52,7 +52,12 @@ nor the module sees the press -- which is why a stamp is recorded after Back.
   are exported, so every DSP test drives the same code through the MIDI FX
   surface. Cable-0 notes tagged INTERNAL are pad IDENTIFIERS (68 is G#, chord
   9 by pitch class) and are dropped before the selector; Move's echo of our
-  own output comes back, so the own-tail filter stays load-bearing.
+  own output comes back, so the own-tail filter stays load-bearing. **And the
+  tool injects only what it GENERATES, never what it received**: process_midi
+  passes a CC through (chain semantics -- a pedal should reach the synth),
+  but a tool's output is echoed back to its input, so press Stop, Move sends
+  All Sound Off, and a passed-through CC looped once per block for the rest
+  of the session -- "no chords after stop". Notes only, both ways.
 - **ui.js is the `ctx`.** canvas.js derives every size from `ctx` and never
   reaches absolute space, so the port was an adapter: the overtake draw
   globals, method for method, and the lifecycle (`init` -> `onOpen`, `tick`

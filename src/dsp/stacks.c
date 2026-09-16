@@ -4589,7 +4589,9 @@ static void tool_inject(stk_t *st, uint8_t out[][3], int lens[], int n) {
     for (int i = 0; i < n; i++) {
         if (lens[i] < 2) continue;
         uint8_t type = out[i][0] & 0xF0;
-        if (type < 0x80 || type >= 0xF0) continue;   /* channel voice only */
+        /* Notes only, on the way out as on the way in (see tool_on_midi):
+         * nothing else this module returns is something it generated. */
+        if (type != 0x80 && type != 0x90) continue;
         /* USB-MIDI: cable 2, and the CIN is the status nibble for every
          * channel-voice type (0x8 note-off ... 0xE bend). */
         uint8_t pkt[4] = {
@@ -4609,6 +4611,22 @@ static void tool_on_midi(void *instance, const uint8_t *msg, int len, int source
     if (source == MOVE_MIDI_SOURCE_INTERNAL &&
         (type == 0x80 || type == 0x90 || type == 0xA0))
         return;                                   /* pad ids, not pitches */
+    /*
+     * THE TOOL INJECTS WHAT IT GENERATES, NEVER WHAT IT RECEIVED.
+     *
+     * In a chain slot process_midi passes a message it does not understand
+     * straight through -- a sustain pedal should reach the synth. As a tool
+     * the output goes INTO Move and Move echoes it back on MIDI_OUT, which the
+     * shim routes here. Press Stop and Move sends All Sound Off (CC 120) on
+     * its tracks; passed through and injected, Move echoed it, and the loop
+     * ran once per block for the rest of the session -- every chord you
+     * triggered afterwards was silenced within 2.9ms (measured: 16 packets
+     * per 46ms, "no chords anymore after stop"). So a channel-voice message
+     * that is not a note never reaches process_midi at all. Notes still do:
+     * a keyboard selects chords, and the module's own echo is filtered on its
+     * sounding voices inside.
+     */
+    if (type != 0x80 && type != 0x90 && msg[0] < 0xF0) return;
     uint8_t out[STK_TOOL_MAX_OUT][3];
     int lens[STK_TOOL_MAX_OUT];
     int n = stk_process_midi(st, msg, len, out, lens, STK_TOOL_MAX_OUT);

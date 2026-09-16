@@ -91,7 +91,34 @@ int main(void) {
     if (ons < 4) { printf("FAIL: a lap of four chords injected only %d note-ons\n", ons); bad = 1; }
     if (left) { printf("FAIL: %d notes left sounding after stop\n", left); bad = 1; }
 
+    /*
+     * THE ECHO LOOP. Move echoes every injected packet back on MIDI_OUT and
+     * the shim hands MIDI_OUT to this entry; a message the module merely
+     * PASSED THROUGH therefore comes straight back, is passed through again,
+     * and loops once per block for the session. Press Stop and Move sends
+     * All Sound Off (CC 120) -- on the device that silenced every later
+     * chord within a block. Feed the CC and echo whatever comes out: nothing
+     * may come out, and after the echo settles the audition must still sound.
+     */
+    npk = 0;
+    uint8_t cc120[3] = { 0xB0, 0x78, 0x00 };
+    api->on_midi(inst, cc120, 3, MOVE_MIDI_SOURCE_EXTERNAL);
+    for (int round = 0; round < 8 && npk > 0; round++) {   /* Move's echo */
+        int m = npk; npk = 0;
+        for (int i = 0; i < m; i++) { uint8_t e[3] = { pk[i][1], pk[i][2], pk[i][3] }; api->on_midi(inst, e, 3, MOVE_MIDI_SOURCE_EXTERNAL); }
+    }
+    if (npk != 0) { printf("FAIL: a CC fed to the tool came back out (%d packets) -- the echo loop\n", npk); bad = 1; }
+    uint8_t sustain[3] = { 0xB0, 0x40, 0x7F };
+    npk = 0; api->on_midi(inst, sustain, 3, MOVE_MIDI_SOURCE_EXTERNAL);
+    if (npk != 0) { printf("FAIL: a sustain CC was re-injected\n"); bad = 1; }
+    npk = 0; api->set_param(inst, "play", "on");
+    for (int i = 0; i < 40; i++) api->render_block(inst, audio, 128);
+    api->set_param(inst, "play", "off");
+    for (int i = 0; i < 40; i++) api->render_block(inst, audio, 128);
+    int ons2 = 0; for (int i = 0; i < npk; i++) if ((pk[i][1] & 0xF0) == 0x90 && pk[i][3]) ons2++;
+    if (ons2 < 3) { printf("FAIL: after Move's Stop-time CC the audition is silent (%d ons)\n", ons2); bad = 1; }
+
     api->destroy_instance(inst);
-    puts(bad ? "FAIL" : "PASS: the tool entry injects the lap on cable 2, on the track's channel, and leaves nothing ringing");
+    puts(bad ? "FAIL" : "PASS: the tool entry injects the lap on cable 2, on the track's channel, leaves nothing ringing, and never re-injects what it was handed");
     return bad;
 }
