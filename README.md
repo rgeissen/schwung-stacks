@@ -21,6 +21,10 @@ the same playhead and the same transport.
   Move records what you just heard, on its own downbeat. Stacks keeps playing
   while parked; reopen it from the Tools menu to carry on where you were.
 * **Track 1–4** picks the Move track the chords address (MIDI channel 1–4).
+* **It remembers.** The progression, all sixteen patterns and every setting are
+  saved to `/data/UserData/schwung/stacks/state.json` a moment after each edit
+  and again on exit, and are there when you open it next — across reboots and
+  reinstalls.
 
 ## Install
 

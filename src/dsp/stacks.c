@@ -50,6 +50,14 @@
 #include "host/midi_fx_api_v1.h"
 #include "host/plugin_api_v1.h"
 
+#define STK_STATE_MAX      16384   /* get_param("state") is ~1.5KB today; the map grows with params */
+#define STK_STATE_DIR      "/data/UserData/schwung/stacks"
+#define STK_STATE_FILE     STK_STATE_DIR "/state.json"
+#define STK_SAVE_QUIET_MS  1500    /* a jog spin is one save, not one per detent */
+
+static int  stk_get_param(void *instance, const char *key, char *buf, int buf_len);
+static void stk_set_param_inner(void *instance, const char *key, const char *val);
+
 /*
  * SIXTEEN, because DUPLICATE has to be able to double what is there. At eight
  * a four-chord phrase was the largest that could be doubled, which made the
@@ -960,9 +968,25 @@ typedef struct {
      * only when it moved; `blocks` is the device clock the browser time-bases
      * its playhead on, in render blocks so it costs nothing to keep.
      */
-    unsigned         rev;
+    atomic_uint      rev;
     int              status_rev_seen;
     unsigned long    blocks;
+    /*
+     * PERSISTENCE. A chain component's `state` rode in Move's set; a tool has
+     * no slot in the set, so Stacks keeps its own file -- the progression,
+     * the sixteen patterns and every setting, i.e. exactly get_param("state").
+     * The audio thread never touches the disk: the worker asks for a
+     * snapshot (snap_req), tick serialises into snap_buf and releases
+     * snap_seq, and the worker writes it out -- temp file plus rename, so a
+     * crash mid-write leaves the previous file whole. Saved when the rev has
+     * been quiet for STK_SAVE_QUIET_MS, and synchronously on destroy.
+     */
+    char             state_path[256];
+    atomic_int       snap_req;      /* worker -> tick: please serialise */
+    atomic_int       snap_seq;      /* tick -> worker: snap_buf is ready */
+    int              snap_done;     /* tick's copy of what it has answered */
+    unsigned         snap_rev;      /* the rev snap_buf describes */
+    char             snap_buf[STK_STATE_MAX];
 } stk_t;
 
 /* ======================================================================
@@ -1825,6 +1849,36 @@ done:
  */
 
 /* ======================================================================
+ * Persistence   [worker thread and load/unload only -- never the audio thread]
+ * ====================================================================== */
+static int state_file_write(const char *path, const char *json) {
+    if (!path[0] || !json || !json[0]) return 0;
+    char tmp[300];
+    snprintf(tmp, sizeof tmp, "%s.tmp", path);
+    FILE *f = fopen(tmp, "wb");
+    if (!f) return 0;
+    size_t n = strlen(json);
+    int ok = fwrite(json, 1, n, f) == n && fputc('\n', f) != EOF;
+    ok = (fclose(f) == 0) && ok;
+    if (!ok) { unlink(tmp); return 0; }
+    if (rename(tmp, path) != 0) { unlink(tmp); return 0; }
+    return 1;
+}
+
+/* Restore from the file, if there is one. Runs in create_instance, before
+ * the worker exists and before any callback can. A file this build cannot
+ * parse is left alone and ignored: set_param("state") refuses a version it
+ * does not know rather than half-applying it. */
+static void state_file_load(stk_t *st) {
+    long len = 0;
+    char *json = slurp(st->state_path, &len);
+    if (!json) return;
+    if (len > 0 && len < STK_STATE_MAX) stk_set_param_inner(st, "state", json);
+    free(json);
+    stk_log("stacks: state restored");
+}
+
+/* ======================================================================
  * The worker
  * ====================================================================== */
 static stk_prog_t g_req_base;   /* snapshot taken on the RT side, for append */
@@ -1832,8 +1886,39 @@ static stk_prog_t g_req_base;   /* snapshot taken on the RT side, for append */
 static void *stk_worker(void *arg) {
     stk_t *st = (stk_t *)arg;
     int last_read = 0;
+    /* Zero, not "the rev now": pthread_create returns before this line runs,
+     * and an edit made in that gap would count as already saved. The rev IS
+     * zero at create -- the restore goes through the inner setter -- so zero
+     * means "nothing since the file was read". */
+    unsigned saved_rev = 0;
+    unsigned quiet_rev = 0;
+    int quiet_ticks = 0;            /* 100ms each */
+    int snap_asked = 0, snap_seen = 0;
 
     while (!atomic_load(&st->quit)) {
+        /*
+         * SAVE ON QUIET. The rev moves on every write; a jog spin is dozens
+         * of them a second. So the file is written once the rev has held
+         * still for STK_SAVE_QUIET_MS -- one save per gesture, not per
+         * detent -- and only if it moved since the last save.
+         */
+        {
+            unsigned rev = atomic_load_explicit(&st->rev, memory_order_relaxed);
+            if (rev != quiet_rev) { quiet_rev = rev; quiet_ticks = 0; }
+            else if (quiet_ticks < 1000000) quiet_ticks++;
+            if (rev != saved_rev && quiet_ticks * 100 >= STK_SAVE_QUIET_MS
+                && snap_asked == snap_seen) {
+                snap_asked++;
+                atomic_store_explicit(&st->snap_req, snap_asked, memory_order_release);
+            }
+            int got = atomic_load_explicit(&st->snap_seq, memory_order_acquire);
+            if (got != snap_seen) {
+                snap_seen = got;
+                if (state_file_write(st->state_path, st->snap_buf)) saved_rev = st->snap_rev;
+                else stk_log("stacks: state save failed");
+            }
+        }
+
         int r = atomic_load(&st->req_read);
         if (r != last_read) {
             last_read = r;
@@ -2085,7 +2170,7 @@ static void seed_default(stk_prog_t *p) {
 }
 
 static void *stk_create(const char *module_dir, const char *config_json) {
-    (void)module_dir; (void)config_json;
+    (void)module_dir;
     stk_t *st = (stk_t *)calloc(1, sizeof(stk_t));
     if (!st) return NULL;
 
@@ -2125,6 +2210,30 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     atomic_init(&st->req_read, 0);
     atomic_init(&st->staging_seq, 0);
     atomic_init(&st->status, 0);
+    atomic_init(&st->rev, 0);
+    atomic_init(&st->snap_req, 0);
+    atomic_init(&st->snap_seq, 0);
+
+    /* Where the instrument lives between sessions. Overridable for the
+     * tests (and for a second instance) through the config JSON; the
+     * directory is created here, once, before any thread exists. */
+    snprintf(st->state_path, sizeof st->state_path, "%s", STK_STATE_FILE);
+    if (config_json) {
+        const char *p = strstr(config_json, "\"state_path\":\"");
+        if (p) {
+            p += 14;
+            const char *e = strchr(p, '"');
+            if (e && e - p < (long)sizeof st->state_path)
+                snprintf(st->state_path, sizeof st->state_path, "%.*s", (int)(e - p), p);
+        }
+    }
+    {
+        char dir[256];
+        snprintf(dir, sizeof dir, "%s", st->state_path);
+        char *slash = strrchr(dir, '/');
+        if (slash && slash != dir) { *slash = 0; mkdir(dir, 0755); }
+    }
+    state_file_load(st);
 
     /*
      * SCHED_OTHER, EXPLICITLY. create_instance runs on the SPI callback, so a
@@ -2153,6 +2262,10 @@ static void stk_destroy(void *instance) {
         atomic_store(&st->quit, 1);
         pthread_join(st->worker, NULL);
     }
+    /* The last word: whatever the quiet timer had not yet written. No
+     * callback can run now, so serialising here is safe. */
+    if (stk_get_param(st, "state", st->snap_buf, sizeof st->snap_buf) > 0)
+        state_file_write(st->state_path, st->snap_buf);
     free(st);
 }
 
@@ -2359,12 +2472,28 @@ static int stk_tick(void *instance, int frames, int sample_rate,
     st->blocks++;
     {
         int sn = atomic_load(&st->status);
-        if (sn != st->status_rev_seen) { st->status_rev_seen = sn; st->rev++; }
+        if (sn != st->status_rev_seen) {
+            st->status_rev_seen = sn;
+            atomic_fetch_add_explicit(&st->rev, 1, memory_order_relaxed);
+        }
+    }
+    /* The worker asked for a snapshot to save: serialise here, where the
+     * state is ours, and release it. One snprintf pass, the same one the
+     * Tool tab costs on a rev change; never more often than the quiet time. */
+    {
+        int want = atomic_load_explicit(&st->snap_req, memory_order_acquire);
+        if (want != st->snap_done) {
+            st->snap_done = want;
+            st->snap_rev = atomic_load_explicit(&st->rev, memory_order_relaxed);
+            if (stk_get_param(st, "state", st->snap_buf, sizeof st->snap_buf) < 0)
+                st->snap_buf[0] = 0;
+            atomic_store_explicit(&st->snap_seq, want, memory_order_release);
+        }
     }
     int seq = atomic_load_explicit(&st->staging_seq, memory_order_acquire);
     if (seq != st->staging_applied) {
         st->staging_applied = seq;
-        st->rev++;
+        atomic_fetch_add_explicit(&st->rev, 1, memory_order_relaxed);
         st->prog = st->staging;
         if (st->sel > st->prog.count) st->sel = st->prog.count;
         if (st->sel < 1) st->sel = 1;
@@ -2996,7 +3125,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
 static void stk_set_param(void *instance, const char *key, const char *val) {
     stk_t *st = (stk_t *)instance;
     if (!st || !key || !val) return;
-    st->rev++;                      /* every write is snapshot-visible */
+    atomic_fetch_add_explicit(&st->rev, 1, memory_order_relaxed);   /* every write is snapshot-visible */
     stk_set_param_inner(instance, key, val);
 
     /*
@@ -4125,10 +4254,11 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
         float bpm_f = (g_host && g_host->get_bpm) ? g_host->get_bpm() : 120.0f;
         if (bpm_f < 20.0f || bpm_f > 300.0f) bpm_f = 120.0f;
         int pos_units = UNIT_CLOCKS > 0 ? (st->pulse / UNIT_CLOCKS) : 0;
+        unsigned rev = atomic_load_explicit(&st->rev, memory_order_relaxed);
         if (on)
-            return snprintf(buf, buf_len, "%u:1:%d:%d:%lu", st->rev, pos_units,
+            return snprintf(buf, buf_len, "%u:1:%d:%d:%lu", rev, pos_units,
                             (int)(bpm_f + 0.5f), st->blocks * 128UL / 44UL);
-        return snprintf(buf, buf_len, "%u:0:%d:%d", st->rev, pos_units,
+        return snprintf(buf, buf_len, "%u:0:%d:%d", rev, pos_units,
                         (int)(bpm_f + 0.5f));
     }
     if (strcmp(key, "preview") == 0) {

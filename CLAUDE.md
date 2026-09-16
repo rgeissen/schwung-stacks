@@ -70,6 +70,16 @@ nor the module sees the press -- which is why a stamp is recorded after Back.
   records it from the wire and never asks. One recorder site; gestures read
   `shiftHeld()`. (On the chain it was the opposite, and a `d1 === 49` branch
   was dead code that looked like a feature.)
+- **A tool has no slot in the set, so it keeps its own file.** Exactly
+  `get_param("state")`, at `/data/UserData/schwung/stacks/state.json`
+  (outside the module folder: a reinstall must not wipe it). The audio thread
+  never touches the disk: the worker asks, `tick` serialises into a buffer
+  and releases it, the worker writes temp-plus-rename. Saved once the rev has
+  been quiet for 1.5 s -- a jog spin is one save, not one per detent -- and
+  synchronously on destroy. The worker's "already saved" mark starts at
+  ZERO, not at the rev when the thread first runs: `pthread_create` returns
+  before that, and an edit in the gap counted as saved.
+  `tests/test_stacks_persist.sh`.
 - **The panel comes through the Tool tab.** The manager discovers the tool by
   `module_id`, seeds the browser from `state` -- a FLAT MAP of strings, the
   save blob first under `s` so a restore still finds it, then every readable
