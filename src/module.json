@@ -353,6 +353,8 @@
           "Bossa",
           "Latin",
           "House",
+          "Melodic",
+          "Lo-fi",
           "Reggae",
           "Country",
           "Cinematic"
@@ -373,14 +375,27 @@
           "Pachelbel",
           "Royal Road",
           "Emotional",
+          "Bittersweet",
+          "Creep",
+          "Falling",
+          "Rising minor",
+          "Diamonds",
+          "Crazy",
+          "Sensitive 7",
           "I-IV-V",
           "Mixolydian",
           "Grunge",
           "Anthem",
+          "bVII descent",
+          "Mario",
+          "Minor rock",
           "Thrash",
           "Power Metal",
           "Doom",
           "Phrygian",
+          "Diabolus",
+          "Iron",
+          "Neoclassical",
           "ii-V-I",
           "Minor ii-V",
           "Rhythm A",
@@ -389,47 +404,113 @@
           "Tritone",
           "Bird Blues",
           "Modal",
+          "Circle",
+          "A Train",
+          "Passing dim",
+          "Ragtime",
+          "Minor turn",
+          "Autumn",
           "12-bar",
           "Quick IV",
           "Minor blues",
           "8-bar",
+          "Blues turn",
+          "Slow 9ths",
           "Neo-soul",
           "Montuno",
           "iii-vi-ii-V",
           "Slow jam",
+          "Two of Us",
+          "Silky",
+          "Mediants",
           "Plagal",
           "Shouting",
           "Walk-up",
           "Amen",
+          "6-2-5-1",
+          "Sunday",
+          "Pass through",
+          "Four five six",
           "JB vamp",
           "Funk turn",
           "P-Funk",
           "Clav",
+          "Chameleon",
           "Two-chord",
           "Minor lift",
           "Quiet storm",
+          "Borrowed iv 7",
+          "Purple",
           "Ipanema",
           "Wave",
           "Desafinado",
           "Corcovado",
+          "Blue bossa",
           "Guajira",
           "Bolero",
           "Salsa",
+          "Descarga",
           "Deep vamp",
           "Two-bar",
           "Filter",
           "Garage",
+          "Feel it",
+          "Deep two",
+          "Reflective",
+          "Dorian vamp",
+          "MAW",
+          "Descending 7",
+          "Late night",
+          "Ninths",
+          "Sunrise",
+          "Piano house",
+          "Prog lift",
+          "Soulful",
+          "Afterlife",
+          "Hypnotic",
+          "Anjuna",
+          "Mysterious",
+          "Haunting",
+          "Endless fall",
+          "Dark pedal",
+          "Lifter",
+          "Uplift",
+          "Suspended",
+          "Prog minor",
+          "Add nines",
+          "Nostalgia",
+          "Study 2-5-1-4",
+          "Drift",
+          "Tape",
+          "Rainy",
+          "Stairs",
+          "Descent",
+          "Sinking",
           "Skank",
           "Roots minor",
           "Rockers",
           "Boot scoot",
           "Train",
+          "Bluegrass",
           "Andalusian",
           "Aeolian",
           "Dorian",
           "Picardy",
           "Ostinato",
-          "Lament"
+          "Lament",
+          "Sorrow",
+          "Elegy",
+          "Hope",
+          "Interstellar",
+          "Pirates",
+          "Leia",
+          "Lydian lift",
+          "Ideal",
+          "Gothic",
+          "Neapolitan",
+          "Breath",
+          "Folia",
+          "Passamezzo"
         ],
         "default": 0
       },
@@ -965,77 +1046,87 @@
       {
         "name": "Pop",
         "first": 1,
-        "count": 6
+        "count": 13
       },
       {
         "name": "Rock",
-        "first": 7,
-        "count": 4
+        "first": 14,
+        "count": 7
       },
       {
         "name": "Metal",
-        "first": 11,
-        "count": 4
+        "first": 21,
+        "count": 7
       },
       {
         "name": "Jazz",
-        "first": 15,
-        "count": 8
+        "first": 28,
+        "count": 14
       },
       {
         "name": "Blues",
-        "first": 23,
-        "count": 4
+        "first": 42,
+        "count": 6
       },
       {
         "name": "Soul",
-        "first": 27,
-        "count": 4
+        "first": 48,
+        "count": 7
       },
       {
         "name": "Gospel",
-        "first": 31,
-        "count": 4
+        "first": 55,
+        "count": 8
       },
       {
         "name": "Funk",
-        "first": 35,
-        "count": 4
+        "first": 63,
+        "count": 5
       },
       {
         "name": "R&B",
-        "first": 39,
-        "count": 3
+        "first": 68,
+        "count": 5
       },
       {
         "name": "Bossa",
-        "first": 42,
-        "count": 4
+        "first": 73,
+        "count": 5
       },
       {
         "name": "Latin",
-        "first": 46,
-        "count": 3
-      },
-      {
-        "name": "House",
-        "first": 49,
+        "first": 78,
         "count": 4
       },
       {
+        "name": "House",
+        "first": 82,
+        "count": 16
+      },
+      {
+        "name": "Melodic",
+        "first": 98,
+        "count": 12
+      },
+      {
+        "name": "Lo-fi",
+        "first": 110,
+        "count": 8
+      },
+      {
         "name": "Reggae",
-        "first": 53,
+        "first": 118,
         "count": 3
       },
       {
         "name": "Country",
-        "first": 56,
-        "count": 2
+        "first": 121,
+        "count": 3
       },
       {
         "name": "Cinematic",
-        "first": 58,
-        "count": 6
+        "first": 124,
+        "count": 19
       }
     ]
   },

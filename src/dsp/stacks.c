@@ -281,92 +281,104 @@ static const char CHAIN_PARAMS_JSON[] =
     "\",\"type\":\"int\",\"min\":-12,\"max\":12,\"default\":0,\"step\":1},{\"key\":\"genre\","
     "\"name\":\"Genre\",\"short_name\":\"Gen\",\"options_as_string\":true,\"type\":\"enum\","
     "\"options\":[\"none\",\"Pop\",\"Rock\",\"Metal\",\"Jazz\",\"Blues\",\"Soul\",\"Gospel\","
-    "\"Funk\",\"R&B\",\"Bossa\",\"Latin\",\"House\",\"Reggae\",\"Country\",\"Cinematic\"],\"d"
-    "efault\":0},{\"key\":\"progression\",\"name\":\"Progression\",\"short_name\":\"Prog\",\""
-    "options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\",\"Axis\",\"Sad Axis\","
-    "\"Doo-wop\",\"Pachelbel\",\"Royal Road\",\"Emotional\",\"I-IV-V\",\"Mixolydian\",\"Grung"
-    "e\",\"Anthem\",\"Thrash\",\"Power Metal\",\"Doom\",\"Phrygian\",\"ii-V-I\",\"Minor ii-V"
-    "\",\"Rhythm A\",\"Turnaround\",\"Coltrane\",\"Tritone\",\"Bird Blues\",\"Modal\",\"12-ba"
-    "r\",\"Quick IV\",\"Minor blues\",\"8-bar\",\"Neo-soul\",\"Montuno\",\"iii-vi-ii-V\",\"Sl"
-    "ow jam\",\"Plagal\",\"Shouting\",\"Walk-up\",\"Amen\",\"JB vamp\",\"Funk turn\",\"P-Funk"
-    "\",\"Clav\",\"Two-chord\",\"Minor lift\",\"Quiet storm\",\"Ipanema\",\"Wave\",\"Desafina"
-    "do\",\"Corcovado\",\"Guajira\",\"Bolero\",\"Salsa\",\"Deep vamp\",\"Two-bar\",\"Filter\""
-    ",\"Garage\",\"Skank\",\"Roots minor\",\"Rockers\",\"Boot scoot\",\"Train\",\"Andalusian"
-    "\",\"Aeolian\",\"Dorian\",\"Picardy\",\"Ostinato\",\"Lament\"],\"default\":0},{\"key\":"
-    "\"common\",\"name\":\"Common Prog\",\"short_name\":\"Cmn\",\"options_as_string\":true,\""
-    "type\":\"enum\",\"options\":[\"none\",\"I-V-vi-IV\",\"vi-IV-I-V\",\"I-vi-IV-V\",\"I-IV-V"
-    "\",\"I-IV-I-V\",\"ii-V-I\",\"I-V-IV\",\"I-iii-IV-V\",\"vi-V-IV-V\",\"i-VI-III-VII\",\"i-"
-    "iv-v\",\"i-VII-VI-VII\"],\"default\":0},{\"key\":\"uncommon\",\"name\":\"Uncommon\",\"sh"
-    "ort_name\":\"Unc\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\",\""
-    "I-bIII-IV-iv\",\"Phrygian\",\"Lydian II\",\"Backdoor\",\"bVI-bVII-I\",\"i-v-bVI-bVII\","
-    "\"Chrom desc\",\"Borrowed IV\",\"Secondary V\",\"i-bVI-iv-V\",\"Double plagal\",\"Aug li"
-    "ft\",\"Tritone col\"],\"default\":0},{\"key\":\"colour\",\"name\":\"Colour\",\"short_nam"
-    "e\":\"Col\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"close\",\"open\""
-    ",\"drop2\",\"drop3\",\"drop2+4\",\"shell\",\"rootless\",\"quartal\",\"spread\",\"cluster"
-    "\"],\"default\":0},{\"key\":\"grouping\",\"name\":\"Voice Grouping\",\"short_name\":\"Gr"
-    "p\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\",\"dynamic\",\"dyn"
-    " +1oct\",\"dyn +2oct\",\"C1-B2\",\"C2-B3\",\"C3-B4\",\"open 1\",\"open 2\",\"open 3\",\""
-    "guitar\",\"drop 2\",\"drop 3\",\"drop 4\",\"drop 2+3\",\"drop 2+4\"],\"default\":0},{\"k"
-    "ey\":\"scale\",\"name\":\"Scale\",\"short_name\":\"Scale\",\"options_as_string\":true,\""
-    "type\":\"enum\",\"options\":[\"Chromatic\",\"Major\",\"Minor\",\"Dorian\",\"Phrygian\","
-    "\"Lydian\",\"Mixolydian\",\"Locrian\",\"HarmMinor\",\"MelMinor\",\"PentMaj\",\"PentMin\""
-    ",\"Blues\"],\"default\":2},{\"key\":\"key\",\"name\":\"Key\",\"short_name\":\"Key\",\"op"
-    "tions_as_string\":true,\"type\":\"enum\",\"options\":[\"C\",\"C#\",\"D\",\"D#\",\"E\",\""
-    "F\",\"F#\",\"G\",\"G#\",\"A\",\"A#\",\"B\"],\"default\":9},{\"key\":\"steps\",\"name\":"
-    "\"Chords\",\"short_name\":\"Chrds\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":4,"
-    "\"step\":1},{\"key\":\"rate\",\"name\":\"New Chord Len\",\"short_name\":\"Rte\",\"option"
-    "s_as_string\":true,\"type\":\"enum\",\"options\":[\"2 bar\",\"1 bar\",\"1/2\",\"1/4\"],"
-    "\"default\":1},{\"key\":\"run\",\"name\":\"Run\",\"short_name\":\"Run\",\"options_as_str"
-    "ing\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":1},{\"key\":\"octa"
-    "ve\",\"name\":\"Octave\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":-2,\"max\":2,\""
-    "default\":0,\"step\":1},{\"key\":\"velocity\",\"name\":\"Velocity\",\"short_name\":\"Vel"
-    "\",\"type\":\"int\",\"min\":1,\"max\":127,\"default\":100,\"step\":1},{\"key\":\"gate\","
-    "\"name\":\"Gate\",\"short_name\":\"Gate\",\"type\":\"int\",\"min\":5,\"max\":100,\"defau"
-    "lt\":90,\"step\":1},{\"key\":\"hum_vel\",\"name\":\"Human Vel\",\"short_name\":\"HuVel\""
-    ",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_vel\","
-    "\"name\":\"Randomize Vel\",\"short_name\":\"RndVel\",\"options_as_string\":true,\"type\""
-    ":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"hu"
-    "m_time\",\"name\":\"Human Time\",\"short_name\":\"HuTim\",\"type\":\"int\",\"min\":0,\"m"
-    "ax\":100,\"default\":0,\"step\":1},{\"key\":\"roll_time\",\"name\":\"Randomize Time\",\""
-    "short_name\":\"RndTim\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write"
-    "\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"swing\",\"name\":\"Swing\",\"s"
-    "hort_name\":\"Swng\",\"type\":\"int\",\"min\":0,\"max\":75,\"default\":0,\"step\":1},{\""
-    "key\":\"lanes\",\"name\":\"Note Lanes\",\"short_name\":\"Lanes\",\"options_as_string\":t"
-    "rue,\"type\":\"enum\",\"options\":[\"scale\",\"diatonic\"],\"default\":0},{\"key\":\"pre"
-    "view\",\"name\":\"Preview\",\"short_name\":\"Prev\",\"options_as_string\":true,\"type\":"
-    "\"enum\",\"options\":[\"off\",\"chord\",\"loop\"],\"default\":0},{\"key\":\"read\",\"nam"
-    "e\":\"Read Clip\",\"short_name\":\"Read\",\"options_as_string\":true,\"type\":\"enum\","
-    "\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"read_mode\","
-    "\"name\":\"Read Mode\",\"short_name\":\"RdMod\",\"options_as_string\":true,\"type\":\"en"
-    "um\",\"options\":[\"replace\",\"append\"],\"default\":0},{\"key\":\"defoct\",\"name\":\""
-    "Octave Default\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\"max\":5,\"default\""
-    ":3,\"step\":1},{\"key\":\"bars\",\"name\":\"Clip Bars\",\"short_name\":\"Bars\",\"type\""
-    ":\"int\",\"min\":1,\"max\":16,\"default\":4,\"step\":1},{\"key\":\"stamp\",\"name\":\"St"
-    "amp Clip\",\"short_name\":\"Stamp\",\"options_as_string\":true,\"type\":\"enum\",\"optio"
-    "ns\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"clear\",\"name\":\""
-    "Clear\",\"short_name\":\"Clear\",\"options_as_string\":true,\"type\":\"enum\",\"options"
-    "\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"pat_store\",\"name\":"
-    "\"Store Pattern\",\"short_name\":\"PSt\",\"type\":\"int\",\"min\":1,\"max\":16,\"default"
-    "\":1,\"step\":1},{\"key\":\"pat_recall\",\"name\":\"Recall Pattern\",\"short_name\":\"PR"
-    "c\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"pat_delet"
-    "e\",\"name\":\"Delete Pattern\",\"short_name\":\"PDl\",\"type\":\"int\",\"min\":1,\"max"
-    "\":16,\"default\":1,\"step\":1},{\"key\":\"play\",\"name\":\"Play Chord\",\"short_name\""
-    ":\"Play\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":"
-    "[\"off\",\"on\"],\"default\":0},{\"key\":\"duplicate\",\"name\":\"Duplicate\",\"short_na"
-    "me\":\"Dup\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options"
-    "\":[\"off\",\"on\"],\"default\":0},{\"key\":\"stretch\",\"name\":\"Double Length\",\"sho"
-    "rt_name\":\"Dbl\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"op"
-    "tions\":[\"off\",\"on\"],\"default\":0},{\"key\":\"compress\",\"name\":\"Half Length\","
-    "\"short_name\":\"Hlf\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\""
-    ",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"undo\",\"name\":\"Undo\",\"short"
-    "_name\":\"Und\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"opti"
-    "ons\":[\"off\",\"on\"],\"default\":0},{\"key\":\"redo\",\"name\":\"Redo\",\"short_name\""
-    ":\"Red\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":["
-    "\"off\",\"on\"],\"default\":0},{\"key\":\"insert\",\"name\":\"Insert Chord\",\"short_nam"
-    "e\":\"Ins\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options"
-    "\":[\"off\",\"on\"],\"default\":0},{\"key\":\"remove\",\"name\":\"Delete Chord\",\"short"
-    "_name\":\"Del\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"opti"
-    "ons\":[\"off\",\"on\"],\"default\":0}]";
+    "\"Funk\",\"R&B\",\"Bossa\",\"Latin\",\"House\",\"Melodic\",\"Lo-fi\",\"Reggae\",\"Countr"
+    "y\",\"Cinematic\"],\"default\":0},{\"key\":\"progression\",\"name\":\"Progression\",\"sh"
+    "ort_name\":\"Prog\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\","
+    "\"Axis\",\"Sad Axis\",\"Doo-wop\",\"Pachelbel\",\"Royal Road\",\"Emotional\",\"Bitterswe"
+    "et\",\"Creep\",\"Falling\",\"Rising minor\",\"Diamonds\",\"Crazy\",\"Sensitive 7\",\"I-I"
+    "V-V\",\"Mixolydian\",\"Grunge\",\"Anthem\",\"bVII descent\",\"Mario\",\"Minor rock\",\"T"
+    "hrash\",\"Power Metal\",\"Doom\",\"Phrygian\",\"Diabolus\",\"Iron\",\"Neoclassical\",\"i"
+    "i-V-I\",\"Minor ii-V\",\"Rhythm A\",\"Turnaround\",\"Coltrane\",\"Tritone\",\"Bird Blues"
+    "\",\"Modal\",\"Circle\",\"A Train\",\"Passing dim\",\"Ragtime\",\"Minor turn\",\"Autumn"
+    "\",\"12-bar\",\"Quick IV\",\"Minor blues\",\"8-bar\",\"Blues turn\",\"Slow 9ths\",\"Neo-"
+    "soul\",\"Montuno\",\"iii-vi-ii-V\",\"Slow jam\",\"Two of Us\",\"Silky\",\"Mediants\",\"P"
+    "lagal\",\"Shouting\",\"Walk-up\",\"Amen\",\"6-2-5-1\",\"Sunday\",\"Pass through\",\"Four"
+    " five six\",\"JB vamp\",\"Funk turn\",\"P-Funk\",\"Clav\",\"Chameleon\",\"Two-chord\",\""
+    "Minor lift\",\"Quiet storm\",\"Borrowed iv 7\",\"Purple\",\"Ipanema\",\"Wave\",\"Desafin"
+    "ado\",\"Corcovado\",\"Blue bossa\",\"Guajira\",\"Bolero\",\"Salsa\",\"Descarga\",\"Deep "
+    "vamp\",\"Two-bar\",\"Filter\",\"Garage\",\"Feel it\",\"Deep two\",\"Reflective\",\"Doria"
+    "n vamp\",\"MAW\",\"Descending 7\",\"Late night\",\"Ninths\",\"Sunrise\",\"Piano house\","
+    "\"Prog lift\",\"Soulful\",\"Afterlife\",\"Hypnotic\",\"Anjuna\",\"Mysterious\",\"Hauntin"
+    "g\",\"Endless fall\",\"Dark pedal\",\"Lifter\",\"Uplift\",\"Suspended\",\"Prog minor\","
+    "\"Add nines\",\"Nostalgia\",\"Study 2-5-1-4\",\"Drift\",\"Tape\",\"Rainy\",\"Stairs\",\""
+    "Descent\",\"Sinking\",\"Skank\",\"Roots minor\",\"Rockers\",\"Boot scoot\",\"Train\",\"B"
+    "luegrass\",\"Andalusian\",\"Aeolian\",\"Dorian\",\"Picardy\",\"Ostinato\",\"Lament\",\"S"
+    "orrow\",\"Elegy\",\"Hope\",\"Interstellar\",\"Pirates\",\"Leia\",\"Lydian lift\",\"Ideal"
+    "\",\"Gothic\",\"Neapolitan\",\"Breath\",\"Folia\",\"Passamezzo\"],\"default\":0},{\"key"
+    "\":\"common\",\"name\":\"Common Prog\",\"short_name\":\"Cmn\",\"options_as_string\":true"
+    ",\"type\":\"enum\",\"options\":[\"none\",\"I-V-vi-IV\",\"vi-IV-I-V\",\"I-vi-IV-V\",\"I-I"
+    "V-V\",\"I-IV-I-V\",\"ii-V-I\",\"I-V-IV\",\"I-iii-IV-V\",\"vi-V-IV-V\",\"i-VI-III-VII\","
+    "\"i-iv-v\",\"i-VII-VI-VII\"],\"default\":0},{\"key\":\"uncommon\",\"name\":\"Uncommon\","
+    "\"short_name\":\"Unc\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none"
+    "\",\"I-bIII-IV-iv\",\"Phrygian\",\"Lydian II\",\"Backdoor\",\"bVI-bVII-I\",\"i-v-bVI-bVI"
+    "I\",\"Chrom desc\",\"Borrowed IV\",\"Secondary V\",\"i-bVI-iv-V\",\"Double plagal\",\"Au"
+    "g lift\",\"Tritone col\"],\"default\":0},{\"key\":\"colour\",\"name\":\"Colour\",\"short"
+    "_name\":\"Col\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"close\",\"op"
+    "en\",\"drop2\",\"drop3\",\"drop2+4\",\"shell\",\"rootless\",\"quartal\",\"spread\",\"clu"
+    "ster\"],\"default\":0},{\"key\":\"grouping\",\"name\":\"Voice Grouping\",\"short_name\":"
+    "\"Grp\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"none\",\"dynamic\","
+    "\"dyn +1oct\",\"dyn +2oct\",\"C1-B2\",\"C2-B3\",\"C3-B4\",\"open 1\",\"open 2\",\"open 3"
+    "\",\"guitar\",\"drop 2\",\"drop 3\",\"drop 4\",\"drop 2+3\",\"drop 2+4\"],\"default\":0}"
+    ",{\"key\":\"scale\",\"name\":\"Scale\",\"short_name\":\"Scale\",\"options_as_string\":tr"
+    "ue,\"type\":\"enum\",\"options\":[\"Chromatic\",\"Major\",\"Minor\",\"Dorian\",\"Phrygia"
+    "n\",\"Lydian\",\"Mixolydian\",\"Locrian\",\"HarmMinor\",\"MelMinor\",\"PentMaj\",\"PentM"
+    "in\",\"Blues\"],\"default\":2},{\"key\":\"key\",\"name\":\"Key\",\"short_name\":\"Key\","
+    "\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"C\",\"C#\",\"D\",\"D#\",\"E"
+    "\",\"F\",\"F#\",\"G\",\"G#\",\"A\",\"A#\",\"B\"],\"default\":9},{\"key\":\"steps\",\"nam"
+    "e\":\"Chords\",\"short_name\":\"Chrds\",\"type\":\"int\",\"min\":1,\"max\":16,\"default"
+    "\":4,\"step\":1},{\"key\":\"rate\",\"name\":\"New Chord Len\",\"short_name\":\"Rte\",\"o"
+    "ptions_as_string\":true,\"type\":\"enum\",\"options\":[\"2 bar\",\"1 bar\",\"1/2\",\"1/4"
+    "\"],\"default\":1},{\"key\":\"run\",\"name\":\"Run\",\"short_name\":\"Run\",\"options_as"
+    "_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":1},{\"key\":\""
+    "octave\",\"name\":\"Octave\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":-2,\"max\":"
+    "2,\"default\":0,\"step\":1},{\"key\":\"velocity\",\"name\":\"Velocity\",\"short_name\":"
+    "\"Vel\",\"type\":\"int\",\"min\":1,\"max\":127,\"default\":100,\"step\":1},{\"key\":\"ga"
+    "te\",\"name\":\"Gate\",\"short_name\":\"Gate\",\"type\":\"int\",\"min\":5,\"max\":100,\""
+    "default\":90,\"step\":1},{\"key\":\"hum_vel\",\"name\":\"Human Vel\",\"short_name\":\"Hu"
+    "Vel\",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_v"
+    "el\",\"name\":\"Randomize Vel\",\"short_name\":\"RndVel\",\"options_as_string\":true,\"t"
+    "ype\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\""
+    ":\"hum_time\",\"name\":\"Human Time\",\"short_name\":\"HuTim\",\"type\":\"int\",\"min\":"
+    "0,\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_time\",\"name\":\"Randomize Time"
+    "\",\"short_name\":\"RndTim\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"w"
+    "rite\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"swing\",\"name\":\"Swing\""
+    ",\"short_name\":\"Swng\",\"type\":\"int\",\"min\":0,\"max\":75,\"default\":0,\"step\":1}"
+    ",{\"key\":\"lanes\",\"name\":\"Note Lanes\",\"short_name\":\"Lanes\",\"options_as_string"
+    "\":true,\"type\":\"enum\",\"options\":[\"scale\",\"diatonic\"],\"default\":0},{\"key\":"
+    "\"preview\",\"name\":\"Preview\",\"short_name\":\"Prev\",\"options_as_string\":true,\"ty"
+    "pe\":\"enum\",\"options\":[\"off\",\"chord\",\"loop\"],\"default\":0},{\"key\":\"read\","
+    "\"name\":\"Read Clip\",\"short_name\":\"Read\",\"options_as_string\":true,\"type\":\"enu"
+    "m\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"read_mod"
+    "e\",\"name\":\"Read Mode\",\"short_name\":\"RdMod\",\"options_as_string\":true,\"type\":"
+    "\"enum\",\"options\":[\"replace\",\"append\"],\"default\":0},{\"key\":\"defoct\",\"name"
+    "\":\"Octave Default\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\"max\":5,\"defa"
+    "ult\":3,\"step\":1},{\"key\":\"bars\",\"name\":\"Clip Bars\",\"short_name\":\"Bars\",\"t"
+    "ype\":\"int\",\"min\":1,\"max\":16,\"default\":4,\"step\":1},{\"key\":\"stamp\",\"name\""
+    ":\"Stamp Clip\",\"short_name\":\"Stamp\",\"options_as_string\":true,\"type\":\"enum\",\""
+    "options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"clear\",\"name"
+    "\":\"Clear\",\"short_name\":\"Clear\",\"options_as_string\":true,\"type\":\"enum\",\"opt"
+    "ions\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"pat_store\",\"nam"
+    "e\":\"Store Pattern\",\"short_name\":\"PSt\",\"type\":\"int\",\"min\":1,\"max\":16,\"def"
+    "ault\":1,\"step\":1},{\"key\":\"pat_recall\",\"name\":\"Recall Pattern\",\"short_name\":"
+    "\"PRc\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"pat_d"
+    "elete\",\"name\":\"Delete Pattern\",\"short_name\":\"PDl\",\"type\":\"int\",\"min\":1,\""
+    "max\":16,\"default\":1,\"step\":1},{\"key\":\"play\",\"name\":\"Play Chord\",\"short_nam"
+    "e\":\"Play\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options"
+    "\":[\"off\",\"on\"],\"default\":0},{\"key\":\"duplicate\",\"name\":\"Duplicate\",\"short"
+    "_name\":\"Dup\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"opti"
+    "ons\":[\"off\",\"on\"],\"default\":0},{\"key\":\"stretch\",\"name\":\"Double Length\",\""
+    "short_name\":\"Dbl\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\","
+    "\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"compress\",\"name\":\"Half Length"
+    "\",\"short_name\":\"Hlf\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"writ"
+    "e\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"undo\",\"name\":\"Undo\",\"sh"
+    "ort_name\":\"Und\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"o"
+    "ptions\":[\"off\",\"on\"],\"default\":0},{\"key\":\"redo\",\"name\":\"Redo\",\"short_nam"
+    "e\":\"Red\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options"
+    "\":[\"off\",\"on\"],\"default\":0},{\"key\":\"insert\",\"name\":\"Insert Chord\",\"short"
+    "_name\":\"Ins\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"opti"
+    "ons\":[\"off\",\"on\"],\"default\":0},{\"key\":\"remove\",\"name\":\"Delete Chord\",\"sh"
+    "ort_name\":\"Del\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"o"
+    "ptions\":[\"off\",\"on\"],\"default\":0}]";
 /* ---- END GENERATED chain_params ---- */
 
 /* ======================================================================
@@ -466,8 +478,8 @@ static const stk_rhythm_t RHYTHMS[] = {
  *
  * Lengths are in eighths of a step, so 8 is one step and 16 is two.
  * ====================================================================== */
-typedef enum { GEN_NONE = 0, GEN_POP, GEN_ROCK, GEN_METAL, GEN_JAZZ, GEN_BLUES, GEN_SOUL, GEN_GOSPEL, GEN_FUNK, GEN_RNB, GEN_BOSSA, GEN_LATIN, GEN_HOUSE, GEN_REGGAE, GEN_COUNTRY, GEN_CINE } stk_genre_t;
-static const char *const GENRES[] = { "none", "Pop", "Rock", "Metal", "Jazz", "Blues", "Soul", "Gospel", "Funk", "R&B", "Bossa", "Latin", "House", "Reggae", "Country", "Cinematic" };
+typedef enum { GEN_NONE = 0, GEN_POP, GEN_ROCK, GEN_METAL, GEN_JAZZ, GEN_BLUES, GEN_SOUL, GEN_GOSPEL, GEN_FUNK, GEN_RNB, GEN_BOSSA, GEN_LATIN, GEN_HOUSE, GEN_MELODIC, GEN_LOFI, GEN_REGGAE, GEN_COUNTRY, GEN_CINE } stk_genre_t;
+static const char *const GENRES[] = { "none", "Pop", "Rock", "Metal", "Jazz", "Blues", "Soul", "Gospel", "Funk", "R&B", "Bossa", "Latin", "House", "Melodic", "Lo-fi", "Reggae", "Country", "Cinematic" };
 #define NUM_GENRES ((int)(sizeof(GENRES) / sizeof(GENRES[0])))
 
 typedef struct { int semi; const char *q; int len; } stk_step_t;
@@ -496,16 +508,29 @@ static const stk_preset_t PRESETS[] = {
  { "Pachelbel",    GEN_POP,0,8, {{0,"maj",8},{7,"maj",8},{9,"min",8},{4,"min",8},{5,"maj",8},{0,"maj",8},{5,"maj",8},{7,"maj",8}} },
  { "Royal Road",   GEN_POP,0,4, {{5,"maj7",8},{7,"dom7",8},{4,"min7",8},{9,"min",8}} },
  { "Emotional",    GEN_POP,0,4, {{5,"maj",8},{0,"maj",8},{7,"maj",8},{9,"min",8}} },
+ { "Bittersweet",  GEN_POP,0,4, {{0,"maj",8},{4,"min",8},{9,"min",8},{5,"maj",8}} },
+ { "Creep",        GEN_POP,0,4, {{0,"maj",8},{4,"maj",8},{5,"maj",8},{5,"min",8}} },
+ { "Falling",      GEN_POP,1,4, {{0,"min",8},{7,"min",8},{5,"min",8},{10,"maj",8}} },
+ { "Rising minor", GEN_POP,1,3, {{8,"maj",8},{10,"maj",8},{0,"min",16}} },
+ { "Diamonds",     GEN_POP,1,4, {{8,"maj",8},{0,"min",8},{10,"maj",8},{3,"maj",8}} },
+ { "Crazy",        GEN_POP,1,4, {{0,"min",8},{3,"dom7",8},{8,"maj",8},{7,"maj",8}} },
+ { "Sensitive 7",  GEN_POP,0,4, {{9,"min7",8},{5,"maj7",8},{0,"maj7",8},{7,"dom7",8}} },
  /* --- Rock ------------------------------------------------------ */
  { "I-IV-V",       GEN_ROCK,0,4, {{0,"maj",8},{5,"maj",8},{7,"maj",8},{0,"maj",8}} },
  { "Mixolydian",   GEN_ROCK,0,4, {{0,"maj",8},{10,"maj",8},{5,"maj",8},{0,"maj",8}} },
  { "Grunge",       GEN_ROCK,1,4, {{0,"min",8},{3,"maj",8},{10,"maj",8},{5,"maj",8}} },
  { "Anthem",       GEN_ROCK,0,4, {{0,"maj",8},{5,"maj",8},{9,"min",8},{7,"maj",8}} },
+ { "bVII descent", GEN_ROCK,0,4, {{0,"maj",8},{7,"maj",8},{10,"maj",8},{5,"maj",8}} },
+ { "Mario",        GEN_ROCK,0,3, {{8,"maj",8},{10,"maj",8},{0,"maj",16}} },
+ { "Minor rock",   GEN_ROCK,1,4, {{0,"min",8},{10,"maj",8},{8,"maj",8},{10,"maj",8}} },
  /* --- Metal ----------------------------------------------------- */
  { "Thrash",       GEN_METAL,1,4, {{0,"5",8},{1,"5",8},{0,"5",8},{10,"5",8}} },
  { "Power Metal",  GEN_METAL,1,4, {{0,"min",8},{8,"maj",8},{3,"maj",8},{10,"maj",8}} },
  { "Doom",         GEN_METAL,1,2, {{0,"min",16},{1,"maj",16}} },
  { "Phrygian",     GEN_METAL,1,4, {{0,"5",8},{1,"maj",8},{0,"5",8},{10,"maj",8}} },
+ { "Diabolus",     GEN_METAL,1,2, {{0,"5",16},{6,"5",16}} },
+ { "Iron",         GEN_METAL,1,4, {{0,"5",8},{3,"5",8},{10,"5",8},{5,"5",8}} },
+ { "Neoclassical", GEN_METAL,1,3, {{0,"min",8},{8,"maj",8},{7,"maj",16}} },
  /* --- Jazz ------------------------------------------------------ */
  { "ii-V-I",       GEN_JAZZ,0,3, {{2,"min7",8},{7,"dom7",8},{0,"maj7",16}} },
  { "Minor ii-V",   GEN_JAZZ,1,3, {{2,"m7b5",8},{7,"dom7",8},{0,"min7",16}} },
@@ -515,44 +540,98 @@ static const stk_preset_t PRESETS[] = {
  { "Tritone",      GEN_JAZZ,0,3, {{2,"min7",8},{1,"dom7",8},{0,"maj7",16}} },
  { "Bird Blues",   GEN_JAZZ,0,7, {{0,"dom7",8},{5,"dom7",8},{0,"dom7",8},{9,"dom7",8},{2,"min7",8},{7,"dom7",8},{0,"maj7",16}} },
  { "Modal",        GEN_JAZZ,1,2, {{0,"min7",16},{0,"min7",16}} },
+ { "Circle",       GEN_JAZZ,0,4, {{9,"min7",8},{2,"min7",8},{7,"dom7",8},{0,"maj7",8}} },
+ { "A Train",      GEN_JAZZ,0,4, {{0,"maj7",8},{2,"dom7",8},{2,"min7",8},{7,"dom7",8}} },
+ { "Passing dim",  GEN_JAZZ,0,4, {{0,"maj7",8},{1,"dim7",8},{2,"min7",8},{7,"dom7",8}} },
+ { "Ragtime",      GEN_JAZZ,0,4, {{4,"dom7",8},{9,"dom7",8},{2,"dom7",8},{7,"dom7",8}} },
+ { "Minor turn",   GEN_JAZZ,1,4, {{0,"min7",8},{8,"dom7",8},{2,"m7b5",8},{7,"dom7",8}} },
+ { "Autumn",       GEN_JAZZ,1,7, {{5,"min7",8},{10,"dom7",8},{3,"maj7",8},{8,"maj7",8},{2,"m7b5",8},{7,"dom7",8},{0,"min7",16}} },
  /* --- Blues ----------------------------------------------------- */
  { "12-bar",       GEN_BLUES,0,7, {{0,"dom7",16},{0,"dom7",16},{5,"dom7",16},{0,"dom7",16},{7,"dom7",8},{5,"dom7",8},{0,"dom7",16}} },
  { "Quick IV",     GEN_BLUES,0,4, {{0,"dom7",8},{5,"dom7",8},{0,"dom7",8},{7,"dom7",8}} },
  { "Minor blues",  GEN_BLUES,1,4, {{0,"min7",16},{5,"min7",8},{0,"min7",8},{7,"dom7",8}} },
  { "8-bar",        GEN_BLUES,0,5, {{0,"dom7",16},{5,"dom7",8},{0,"dom7",8},{7,"dom7",8},{0,"dom7",8}} },
+ { "Blues turn",   GEN_BLUES,0,4, {{0,"dom7",8},{9,"dom7",8},{2,"min7",8},{7,"dom7",8}} },
+ { "Slow 9ths",    GEN_BLUES,0,4, {{0,"9",16},{5,"9",8},{0,"9",8},{7,"9",8}} },
  /* --- Soul ------------------------------------------------------ */
  { "Neo-soul",     GEN_SOUL,0,4, {{0,"maj7",8},{4,"min7",8},{5,"maj7",8},{5,"min7",8}} },
  { "Montuno",      GEN_SOUL,1,4, {{0,"min7",8},{5,"min7",8},{7,"dom7",8},{5,"min7",8}} },
  { "iii-vi-ii-V",  GEN_SOUL,0,4, {{4,"min7",8},{9,"min7",8},{2,"min7",8},{7,"dom7",8}} },
  { "Slow jam",     GEN_SOUL,0,4, {{0,"maj7",8},{4,"min7",8},{9,"min7",8},{5,"maj7",8}} },
+ { "Two of Us",    GEN_SOUL,0,4, {{5,"maj7",8},{4,"dom7",8},{9,"min7",8},{2,"dom7",8}} },
+ { "Silky",        GEN_SOUL,0,3, {{2,"min9",8},{7,"dom7",8},{0,"maj9",16}} },
+ { "Mediants",     GEN_SOUL,0,4, {{0,"maj",8},{3,"maj",8},{8,"maj",8},{7,"maj",8}} },
  /* --- Gospel ---------------------------------------------------- */
  { "Plagal",       GEN_GOSPEL,0,4, {{0,"maj",8},{5,"maj",8},{5,"min",8},{0,"maj",8}} },
  { "Shouting",     GEN_GOSPEL,0,4, {{0,"maj",8},{2,"dom7",8},{7,"maj",8},{0,"maj",8}} },
  { "Walk-up",      GEN_GOSPEL,0,4, {{0,"maj",8},{0,"aug",8},{0,"6",8},{0,"dom7",8}} },
  { "Amen",         GEN_GOSPEL,0,3, {{5,"maj7",8},{7,"dom7",8},{0,"maj7",16}} },
+ { "6-2-5-1",      GEN_GOSPEL,0,4, {{9,"min7",8},{2,"min7",8},{7,"13",8},{0,"maj9",8}} },
+ { "Sunday",       GEN_GOSPEL,0,3, {{0,"maj",8},{4,"dom7",8},{9,"min7",16}} },
+ { "Pass through", GEN_GOSPEL,0,6, {{0,"maj",8},{0,"dom7",8},{5,"maj",8},{2,"dom7",8},{7,"maj",8},{0,"maj",8}} },
+ { "Four five six",GEN_GOSPEL,0,3, {{5,"maj7",8},{7,"dom7",8},{9,"min7",16}} },
  /* --- Funk ------------------------------------------------------ */
  { "JB vamp",      GEN_FUNK,0,2, {{0,"9",16},{0,"9",16}} },
  { "Funk turn",    GEN_FUNK,0,4, {{0,"dom7",8},{5,"dom7",8},{0,"dom7",8},{0,"dom7",8}} },
  { "P-Funk",       GEN_FUNK,1,3, {{0,"min7",16},{5,"min7",8},{0,"min7",8}} },
  { "Clav",         GEN_FUNK,1,4, {{0,"min7",8},{3,"dom7",8},{0,"min7",8},{10,"dom7",8}} },
+ { "Chameleon",    GEN_FUNK,1,2, {{0,"min7",16},{5,"dom7",16}} },
  /* --- R&B ------------------------------------------------------- */
  { "Two-chord",    GEN_RNB,0,2, {{0,"maj7",16},{5,"maj7",16}} },
  { "Minor lift",   GEN_RNB,1,2, {{0,"min7",16},{5,"maj7",16}} },
  { "Quiet storm",  GEN_RNB,0,4, {{0,"maj7",8},{2,"min7",8},{4,"min7",8},{5,"maj7",8}} },
+ { "Borrowed iv 7",GEN_RNB,0,4, {{0,"maj7",8},{5,"maj7",8},{5,"min7",8},{0,"maj7",8}} },
+ { "Purple",       GEN_RNB,0,4, {{0,"maj7",8},{4,"min7",8},{9,"min7",8},{5,"maj9",8}} },
  /* --- Bossa ----------------------------------------------------- */
  { "Ipanema",      GEN_BOSSA,0,4, {{0,"maj7",8},{2,"min7",8},{7,"dom7",8},{0,"maj7",8}} },
  { "Wave",         GEN_BOSSA,0,4, {{0,"maj7",8},{11,"m7b5",8},{4,"dom7",8},{9,"min7",8}} },
  { "Desafinado",   GEN_BOSSA,0,4, {{0,"maj7",8},{0,"dom7",8},{5,"maj7",8},{5,"min7",8}} },
  { "Corcovado",    GEN_BOSSA,1,4, {{0,"min7",8},{0,"dom7",8},{5,"min7",8},{10,"dom7",8}} },
+ { "Blue bossa",   GEN_BOSSA,1,5, {{0,"min7",8},{5,"min7",8},{2,"m7b5",8},{7,"dom7",8},{0,"min7",16}} },
  /* --- Latin ----------------------------------------------------- */
  { "Guajira",      GEN_LATIN,0,4, {{0,"maj",8},{5,"maj",8},{7,"maj",8},{5,"maj",8}} },
  { "Bolero",       GEN_LATIN,1,4, {{0,"min",8},{5,"min",8},{7,"maj",8},{0,"min",8}} },
  { "Salsa",        GEN_LATIN,1,3, {{2,"dom7",8},{7,"dom7",8},{0,"min7",16}} },
+ { "Descarga",     GEN_LATIN,0,2, {{2,"min7",16},{7,"dom7",16}} },
  /* --- House ----------------------------------------------------- */
  { "Deep vamp",    GEN_HOUSE,1,4, {{0,"min7",8},{10,"maj",8},{8,"maj",8},{10,"maj",8}} },
  { "Two-bar",      GEN_HOUSE,1,2, {{0,"min7",16},{5,"min7",16}} },
  { "Filter",       GEN_HOUSE,1,4, {{0,"min7",8},{8,"maj7",8},{10,"maj7",8},{0,"min7",8}} },
  { "Garage",       GEN_HOUSE,1,4, {{0,"min9",8},{5,"min9",8},{10,"maj7",8},{3,"maj7",8}} },
+ { "Feel it",      GEN_HOUSE,1,4, {{0,"min",8},{8,"maj7",8},{10,"maj",8},{0,"maj7",8}} },
+ { "Deep two",     GEN_HOUSE,0,2, {{5,"maj7",16},{4,"min7",16}} },
+ { "Reflective",   GEN_HOUSE,0,2, {{9,"min7",16},{5,"maj7",16}} },
+ { "Dorian vamp",  GEN_HOUSE,1,2, {{0,"min7",16},{5,"dom7",16}} },
+ { "MAW",          GEN_HOUSE,1,3, {{0,"min7",8},{3,"maj7",8},{7,"min7",16}} },
+ { "Descending 7", GEN_HOUSE,1,3, {{0,"min7",8},{7,"min7",8},{5,"min7",16}} },
+ { "Late night",   GEN_HOUSE,1,4, {{0,"min7",8},{5,"min7",8},{10,"dom7",8},{3,"maj7",8}} },
+ { "Ninths",       GEN_HOUSE,1,3, {{0,"min9",8},{8,"maj9",8},{10,"9",16}} },
+ { "Sunrise",      GEN_HOUSE,1,4, {{8,"maj",8},{10,"maj",8},{0,"min",8},{8,"maj",8}} },
+ { "Piano house",  GEN_HOUSE,0,4, {{9,"min7",8},{5,"maj7",8},{0,"maj7",8},{7,"dom7",8}} },
+ { "Prog lift",    GEN_HOUSE,0,4, {{0,"maj",8},{8,"maj",8},{5,"maj",8},{7,"maj",8}} },
+ { "Soulful",      GEN_HOUSE,0,4, {{4,"min7",8},{9,"min7",8},{2,"min9",8},{7,"13",8}} },
+ /* --- Melodic ------------------------------------------------- */
+ { "Afterlife",    GEN_MELODIC,1,4, {{0,"min9",8},{8,"maj7",8},{3,"maj7",8},{10,"add9",8}} },
+ { "Hypnotic",     GEN_MELODIC,1,2, {{0,"min",16},{10,"maj",16}} },
+ { "Anjuna",       GEN_MELODIC,1,4, {{0,"min",8},{3,"maj",8},{10,"maj",8},{8,"maj",8}} },
+ { "Mysterious",   GEN_MELODIC,1,4, {{0,"min",8},{8,"maj",8},{5,"min",8},{10,"maj",8}} },
+ { "Haunting",     GEN_MELODIC,1,4, {{0,"min",8},{5,"min",8},{7,"min",8},{3,"maj",8}} },
+ { "Endless fall", GEN_MELODIC,1,4, {{0,"min",8},{10,"maj",8},{8,"maj",8},{7,"min",8}} },
+ { "Dark pedal",   GEN_MELODIC,1,4, {{0,"min",8},{5,"min",8},{0,"min",8},{10,"maj",8}} },
+ { "Lifter",       GEN_MELODIC,1,4, {{0,"min",8},{7,"maj",8},{8,"maj",8},{7,"maj",8}} },
+ { "Uplift",       GEN_MELODIC,1,3, {{8,"maj",8},{10,"maj",8},{0,"min",16}} },
+ { "Suspended",    GEN_MELODIC,1,4, {{0,"min",8},{8,"sus2",8},{3,"maj",8},{10,"sus2",8}} },
+ { "Prog minor",   GEN_MELODIC,1,4, {{0,"min7",8},{3,"maj",8},{7,"min7",8},{5,"maj",8}} },
+ { "Add nines",    GEN_MELODIC,1,4, {{8,"add9",8},{0,"min7",8},{10,"add9",8},{7,"min",8}} },
+ /* --- Lo-fi --------------------------------------------------- */
+ { "Nostalgia",    GEN_LOFI,0,4, {{0,"maj7",8},{9,"min7",8},{5,"maj7",8},{7,"dom7",8}} },
+ { "Study 2-5-1-4",GEN_LOFI,0,4, {{2,"min7",8},{7,"dom7",8},{0,"maj7",8},{5,"maj7",8}} },
+ { "Drift",        GEN_LOFI,0,4, {{0,"maj7",8},{4,"min7",8},{5,"maj7",8},{2,"min7",8}} },
+ { "Tape",         GEN_LOFI,0,3, {{5,"maj7",8},{0,"maj7",8},{9,"min7",16}} },
+ { "Rainy",        GEN_LOFI,0,4, {{0,"maj7",8},{9,"min7",8},{4,"min7",8},{11,"m7b5",8}} },
+ { "Stairs",       GEN_LOFI,0,3, {{2,"min7",8},{4,"min7",8},{5,"maj7",16}} },
+ { "Descent",      GEN_LOFI,0,4, {{5,"maj7",8},{4,"min7",8},{2,"min7",8},{0,"maj7",8}} },
+ { "Sinking",      GEN_LOFI,1,4, {{8,"maj7",8},{7,"min7",8},{5,"min7",8},{3,"maj7",8}} },
  /* --- Reggae ---------------------------------------------------- */
  { "Skank",        GEN_REGGAE,0,2, {{0,"maj",16},{5,"maj",16}} },
  { "Roots minor",  GEN_REGGAE,1,4, {{0,"min",8},{10,"maj",8},{5,"maj",8},{0,"min",8}} },
@@ -560,6 +639,7 @@ static const stk_preset_t PRESETS[] = {
  /* --- Country --------------------------------------------------- */
  { "Boot scoot",   GEN_COUNTRY,0,4, {{0,"maj",8},{10,"maj",8},{5,"maj",8},{7,"maj",8}} },
  { "Train",        GEN_COUNTRY,0,3, {{0,"maj",16},{7,"maj",8},{0,"maj",8}} },
+ { "Bluegrass",    GEN_COUNTRY,0,4, {{0,"maj",16},{5,"maj",16},{0,"maj",16},{7,"maj",16}} },
  /* --- Cinematic ------------------------------------------------- */
  { "Andalusian",   GEN_CINE,1,4, {{0,"min",8},{10,"maj",8},{8,"maj",8},{7,"maj",8}} },
  { "Aeolian",      GEN_CINE,1,3, {{0,"min",8},{8,"maj",8},{10,"maj",16}} },
@@ -567,6 +647,19 @@ static const stk_preset_t PRESETS[] = {
  { "Picardy",      GEN_CINE,1,4, {{0,"min",8},{5,"min",8},{7,"maj",8},{0,"maj",8}} },
  { "Ostinato",     GEN_CINE,1,2, {{0,"min",16},{8,"maj",16}} },
  { "Lament",       GEN_CINE,1,4, {{0,"min",8},{11,"maj",8},{10,"maj",8},{8,"maj",8}} },
+ { "Sorrow",       GEN_CINE,1,4, {{0,"min",8},{5,"min",8},{3,"maj",8},{10,"maj",8}} },
+ { "Elegy",        GEN_CINE,1,4, {{0,"min",8},{3,"maj",8},{5,"min",8},{0,"min",8}} },
+ { "Hope",         GEN_CINE,1,4, {{8,"maj",8},{3,"maj",8},{10,"maj",8},{0,"min",8}} },
+ { "Interstellar", GEN_CINE,1,4, {{8,"maj7",8},{7,"min",8},{0,"min",8},{7,"min7",8}} },
+ { "Pirates",      GEN_CINE,1,7, {{0,"min",8},{5,"maj",8},{7,"min",8},{0,"min",8},{8,"maj",8},{3,"maj",8},{0,"min",16}} },
+ { "Leia",         GEN_CINE,0,2, {{0,"maj",16},{5,"min",16}} },
+ { "Lydian lift",  GEN_CINE,0,2, {{0,"maj",16},{2,"maj",16}} },
+ { "Ideal",        GEN_CINE,0,3, {{0,"maj",8},{8,"maj",8},{5,"maj",16}} },
+ { "Gothic",       GEN_CINE,1,2, {{0,"min",16},{7,"maj7",16}} },
+ { "Neapolitan",   GEN_CINE,1,4, {{0,"min",8},{1,"maj",8},{7,"maj",8},{0,"min",8}} },
+ { "Breath",       GEN_CINE,1,2, {{0,"sus4",16},{0,"min",16}} },
+ { "Folia",        GEN_CINE,1,8, {{0,"min",8},{7,"maj",8},{0,"min",8},{10,"maj",8},{3,"maj",8},{10,"maj",8},{0,"min",8},{7,"maj",8}} },
+ { "Passamezzo",   GEN_CINE,1,8, {{0,"min",8},{10,"maj",8},{0,"min",8},{7,"maj",8},{3,"maj",8},{10,"maj",8},{0,"min",8},{7,"maj",8}} },
 };
 #define NUM_PRESETS ((int)(sizeof(PRESETS) / sizeof(PRESETS[0])))
 

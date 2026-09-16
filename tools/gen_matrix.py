@@ -99,8 +99,8 @@ DESC = {
  "degree":    "Sets the chord's root by scale degree, counted through the scale's own notes &mdash; a pentatonic has five, a blues six. Bound to the pad row, where a missing degree is dark.",
  "grouping":  "How the chords sit against each other, and where. <em>dynamic</em> leads each voicing from the one before; the registers fold them into two octaves; opens and drops space them.",
 
- "genre":     "Groups the library into 15 styles. Turning it jumps to that genre's first progression and applies it &mdash; the gesture Family performs on Shape.",
- "progression":"63 progressions, stored as semitones from the tonic so they land in your Key and Scale. <strong>Voiced by style</strong>, so Colour leaves them alone. It overwrites.",
+ "genre":     "Groups the library into 17 styles, house to cinematic. Turning it jumps to that genre's first progression and applies it &mdash; the gesture Family performs on Shape.",
+ "progression":"142 progressions, stored as semitones from the tonic so they land in your Key and Scale. <strong>Voiced by style</strong>, so Colour leaves them alone. It overwrites.",
  "common":    "The progressions most songs are built from. Written as plain triads with no style of their own, which is what makes Colour meaningful on them.",
  "uncommon":  "Chromatic and modal material: borrowed iv, backdoor, Phrygian, chromatic mediants, secondary dominants. Plain triads like Common, so Colour applies.",
  "colour":    "How the chord is voiced, not which chord it is: close, open, the drops, shell, rootless, quartal, spread, cluster. The axis <em>Shape</em> cannot express.",
