@@ -130,7 +130,7 @@ DESC = {
  "hum_time":  "Spreads onsets per note. The spread is shifted so the earliest note still lands on the beat, never clamped.",
  "roll_time": "Re-rolls the timing spread and leaves velocity where it is, so the two can be dialled in separately.",
 
- "read":      "Reads the clip playing on this track and names its chords, so you can edit something you already recorded.",
+ "read":      "Reads the clip playing on the track <em>Read Track</em> names (in the browser panel) and names its chords, so you can edit something you already recorded.",
  "read_mode": "Whether reading replaces the progression or appends to it, so one phrase can be built from several clips.",
  "stamp":     "Arms one lap for Move to record: press Back, then Record on Move, and it plays the progression once on Move's downbeat.",
  "clear":     "Empties the buffer to a single rest, in your Key and Octave Default &mdash; not to a demo progression.",
