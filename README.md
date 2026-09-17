@@ -21,7 +21,10 @@ the same playhead and the same transport.
 * **Stamp to a clip** by arming one lap: press Back, then Record on Move, and
   Move records what you just heard, on its own downbeat. Stacks keeps playing
   while parked; reopen it from the Tools menu to carry on where you were.
-* **Track 1–4** picks the Move track the chords address (MIDI channel 1–4).
+* **It plays on the track you have selected on Move** — Move puts an incoming
+  note on the selected track whatever channel it carries — and *Read Clip*
+  imports from the track *Read Track* names (a knob only because the host
+  cannot yet tell a tool which track is selected).
 * **It remembers.** The progression, all sixteen patterns and every setting are
   saved to `/data/UserData/schwung/stacks/state.json` a moment after each edit
   and again on exit, and are there when you open it next — across reboots and

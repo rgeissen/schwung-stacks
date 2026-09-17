@@ -352,35 +352,36 @@ static const char CHAIN_PARAMS_JSON[] =
     "ame\":\"Read\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"]"
     ",\"default\":0,\"access\":\"write\"},{\"key\":\"read_mode\",\"name\":\"Read Mode\",\"sho"
     "rt_name\":\"RdMod\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"replace"
-    "\",\"append\"],\"default\":0},{\"key\":\"defoct\",\"name\":\"Octave Default\",\"short_na"
-    "me\":\"Oct\",\"type\":\"int\",\"min\":1,\"max\":5,\"default\":3,\"step\":1},{\"key\":\"b"
-    "ars\",\"name\":\"Clip Bars\",\"short_name\":\"Bars\",\"type\":\"int\",\"min\":1,\"max\":"
-    "16,\"default\":4,\"step\":1},{\"key\":\"stamp\",\"name\":\"Stamp Clip\",\"short_name\":"
-    "\"Stamp\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"de"
-    "fault\":0,\"access\":\"write\"},{\"key\":\"clear\",\"name\":\"Clear\",\"short_name\":\"C"
-    "lear\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"defau"
-    "lt\":0,\"access\":\"write\"},{\"key\":\"pat_store\",\"name\":\"Store Pattern\",\"short_n"
-    "ame\":\"PSt\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":"
-    "\"pat_recall\",\"name\":\"Recall Pattern\",\"short_name\":\"PRc\",\"type\":\"int\",\"min"
-    "\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"pat_delete\",\"name\":\"Delete Patt"
-    "ern\",\"short_name\":\"PDl\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step"
-    "\":1},{\"key\":\"play\",\"name\":\"Play Chord\",\"short_name\":\"Play\",\"options_as_str"
-    "ing\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default"
-    "\":0},{\"key\":\"duplicate\",\"name\":\"Duplicate\",\"short_name\":\"Dup\",\"options_as_"
-    "string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"defa"
-    "ult\":0},{\"key\":\"stretch\",\"name\":\"Double Length\",\"short_name\":\"Dbl\",\"option"
-    "s_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],"
-    "\"default\":0},{\"key\":\"compress\",\"name\":\"Half Length\",\"short_name\":\"Hlf\",\"o"
-    "ptions_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on"
-    "\"],\"default\":0},{\"key\":\"undo\",\"name\":\"Undo\",\"short_name\":\"Und\",\"options_"
-    "as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"d"
-    "efault\":0},{\"key\":\"redo\",\"name\":\"Redo\",\"short_name\":\"Red\",\"options_as_stri"
-    "ng\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default"
-    "\":0},{\"key\":\"insert\",\"name\":\"Insert Chord\",\"short_name\":\"Ins\",\"options_as_"
-    "string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"defa"
-    "ult\":0},{\"key\":\"remove\",\"name\":\"Delete Chord\",\"short_name\":\"Del\",\"options_"
-    "as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"d"
-    "efault\":0}]";
+    "\",\"append\"],\"default\":0},{\"key\":\"read_track\",\"name\":\"Read Track\",\"short_na"
+    "me\":\"RdT\",\"type\":\"int\",\"min\":1,\"max\":4,\"default\":1,\"step\":1},{\"key\":\"d"
+    "efoct\",\"name\":\"Octave Default\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\""
+    "max\":5,\"default\":3,\"step\":1},{\"key\":\"bars\",\"name\":\"Clip Bars\",\"short_name"
+    "\":\"Bars\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":4,\"step\":1},{\"key\":\"s"
+    "tamp\",\"name\":\"Stamp Clip\",\"short_name\":\"Stamp\",\"options_as_string\":true,\"typ"
+    "e\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":"
+    "\"clear\",\"name\":\"Clear\",\"short_name\":\"Clear\",\"options_as_string\":true,\"type"
+    "\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\""
+    "pat_store\",\"name\":\"Store Pattern\",\"short_name\":\"PSt\",\"type\":\"int\",\"min\":1"
+    ",\"max\":16,\"default\":1,\"step\":1},{\"key\":\"pat_recall\",\"name\":\"Recall Pattern"
+    "\",\"short_name\":\"PRc\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1"
+    "},{\"key\":\"pat_delete\",\"name\":\"Delete Pattern\",\"short_name\":\"PDl\",\"type\":\""
+    "int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"play\",\"name\":\"Play C"
+    "hord\",\"short_name\":\"Play\",\"options_as_string\":true,\"type\":\"enum\",\"access\":"
+    "\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"duplicate\",\"name\":\""
+    "Duplicate\",\"short_name\":\"Dup\",\"options_as_string\":true,\"type\":\"enum\",\"access"
+    "\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"stretch\",\"name\":"
+    "\"Double Length\",\"short_name\":\"Dbl\",\"options_as_string\":true,\"type\":\"enum\",\""
+    "access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"compress\",\"n"
+    "ame\":\"Half Length\",\"short_name\":\"Hlf\",\"options_as_string\":true,\"type\":\"enum"
+    "\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"undo\",\""
+    "name\":\"Undo\",\"short_name\":\"Und\",\"options_as_string\":true,\"type\":\"enum\",\"ac"
+    "cess\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"redo\",\"name\":"
+    "\"Redo\",\"short_name\":\"Red\",\"options_as_string\":true,\"type\":\"enum\",\"access\":"
+    "\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"insert\",\"name\":\"Ins"
+    "ert Chord\",\"short_name\":\"Ins\",\"options_as_string\":true,\"type\":\"enum\",\"access"
+    "\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"remove\",\"name\":\""
+    "Delete Chord\",\"short_name\":\"Del\",\"options_as_string\":true,\"type\":\"enum\",\"acc"
+    "ess\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0}]";
 /* ---- END GENERATED chain_params ---- */
 
 /* ======================================================================
@@ -1098,7 +1099,7 @@ typedef struct {
     stk_prog_t       staging;       /* written by worker only, before the store */
     atomic_int       status;        /* 0 idle, 1 working, 2 ok, 3 failed */
     int              recv_ch;       /* cached slot receive channel, for stamping */
-    int              track;         /* tool: the Move track (1-4) the output addresses */
+    int              read_track;    /* the Move track (1-4) whose clip Read Clip imports */
     /*
      * THE TOOL TAB'S LIVE SYNC (docs/MODULES.md "Remote UI for overtake
      * tools"). `rev` bumps on every snapshot-visible change -- a write, a
@@ -2342,7 +2343,7 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     st->pat_cur = 0;   /* slot 1 is active, and empty */
     st->cur_step = -1;
     st->recv_ch = 1;
-    st->track = 1;
+    st->read_track = 1;
     for (int i = 0; i < STK_MAX_VOICES; i++) st->voice[i].note = -1;
     atomic_init(&st->quit, 0);
     atomic_init(&st->req_read, 0);
@@ -3579,11 +3580,15 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
             st->stamp_restore = 0;
             if (st->park_preview_prev == 2 && !st->clock_running) st->preview = 2;
         }
-    } else if (strcmp(key, "track") == 0) {
-        /* The tool's output channel, and the Song.abl track `read` imports
-         * from: Move's four tracks receive on channels 1-4. */
-        st->track = clampi(atoi(val), 1, 4);
-        st->recv_ch = st->track;
+    } else if (strcmp(key, "read_track") == 0) {
+        /* The Song.abl track Read Clip imports from. NOT where the output
+         * goes: Move plays an injected note on whichever track is SELECTED
+         * and ignores the channel (measured 2026-09-17), and the host does
+         * not yet tell a module which track that is -- so Read has to be
+         * told. When clip_selected_track() reaches the module API this knob
+         * goes. */
+        st->read_track = clampi(atoi(val), 1, 4);
+        st->recv_ch = st->read_track;
     } else if (strcmp(key, "preview") == 0) {
         static const char *const P[] = { "off", "chord", "loop" };
         int i = opt_index(val, P, 3);
@@ -3970,6 +3975,10 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
          * build does not know is REFUSED rather than partially applied. */
         const char *p = strstr(val, "\"s\":\"");
         if (!p) return;
+        /* The map around the blob may carry read_track (it is not a blob
+         * field); a set written before it existed simply lacks it. */
+        const char *rt = strstr(val, "\"read_track\":\"");
+        if (rt) st->read_track = clampi(atoi(rt + 14), 1, 4);
         p += 5;
         int key_, scale_, rate_, bars_, defoct_, oct_, vel_, gate_, swing_;
         int hv_, ht_, lanes_, prev_, rm_, sm_, run_, preset_, sel_, count_;
@@ -4305,7 +4314,7 @@ static int state_append_kv(char *buf, int at, int buf_len,
 static int stk_get_param(void *instance, const char *key, char *buf, int buf_len);
 
 static int state_append_map(const stk_t *st, char *buf, int at, int buf_len) {
-    static const char *const DERIVED[] = { "prog", "status", "patterns", "track", "module_id" };
+    static const char *const DERIVED[] = { "prog", "status", "patterns", "module_id" };
     static const char *const SKIP[] = { "state", "chain_params", "rui_poll", "grid" };
     char v[4096];
     int start = at;
@@ -4397,7 +4406,7 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
     if (strcmp(key, "steps") == 0) return snprintf(buf, buf_len, "%d", st->prog.count);
     if (strcmp(key, "rate") == 0)  return snprintf(buf, buf_len, "%s", RATE_OPTS[st->prog.rate]);
     if (strcmp(key, "run") == 0)   return snprintf(buf, buf_len, "%s", st->run ? "on" : "off");
-    if (strcmp(key, "track") == 0) return snprintf(buf, buf_len, "%d", st->track);
+    if (strcmp(key, "read_track") == 0) return snprintf(buf, buf_len, "%d", st->read_track);
     if (strcmp(key, "parked") == 0) return snprintf(buf, buf_len, "%s", st->parked ? "on" : "off");
     if (strcmp(key, "module_id") == 0) return snprintf(buf, buf_len, "stacks");
     if (strcmp(key, "rui_poll") == 0) {
@@ -4622,8 +4631,11 @@ midi_fx_api_v1_t* move_midi_fx_init(const host_api_v1_t *host) {
 #define STK_TOOL_MAX_OUT 32
 
 static void tool_inject(stk_t *st, uint8_t out[][3], int lens[], int n) {
+    (void)st;
     if (!g_host || !g_host->midi_inject_to_move) return;
-    uint8_t ch = (uint8_t)((st->track - 1) & 0x0F);
+    /* Channel 1, always: Move plays an injected note on the SELECTED track
+     * whatever channel it carries, so there is nothing to choose here. */
+    uint8_t ch = 0;
     for (int i = 0; i < n; i++) {
         if (lens[i] < 2) continue;
         uint8_t type = out[i][0] & 0xF0;

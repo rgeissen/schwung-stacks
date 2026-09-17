@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
     api->set_param(a, "sel", "3");
     api->set_param(a, "pat_store", "5");          /* the progression into slot 5 */
     api->set_param(a, "key", "F#");
+    api->set_param(a, "read_track", "3");          /* not a blob field: rides in the map */
     pump(api, a, STK_SAVE_QUIET_MS + 900);
     if (access(argv[1], R_OK) != 0) { puts("FAIL: no state file after the quiet time"); bad = 1; }
     long before = 0; char *f1 = slurp(argv[1], &before);
@@ -64,6 +65,8 @@ int main(int argc, char **argv) {
     if (strcmp(v, "2") != 0) { printf("FAIL: sel restored as %s\n", v); bad = 1; }
     get(api, b, "key", v, sizeof v);
     if (strcmp(v, "F#") != 0) { printf("FAIL: key restored as %s\n", v); bad = 1; }
+    get(api, b, "read_track", v, sizeof v);
+    if (strcmp(v, "3") != 0) { printf("FAIL: read_track restored as %s\n", v); bad = 1; }
     get(api, b, "patterns", v, sizeof v);          /* "<mask hex>|<current>" */
     unsigned mask = 0; sscanf(v, "%x|", &mask);
     if (!(mask & (1u << 4))) { printf("FAIL: pattern slot 5 not restored (patterns=%s)\n", v); bad = 1; }

@@ -331,10 +331,12 @@ And two things learned for Phase 1:
 
 Two things, and the port does not block on either.
 
-- **Which channel addresses which Move track** — the doc says "via
-  channel-based routing"; is it channel *N* → track *N*, or the slot's
-  configured receive channel? The `track` param's label depends on the
-  answer.
+- ~~Which channel addresses which Move track~~ — **answered on the device,
+  2026-09-17: none.** Move plays an injected note on whichever track is
+  SELECTED and ignores the channel. The `track` param went; `Read Track`
+  stays only because `Read Clip` needs a Song.abl track index and the host
+  does not yet expose `clip_selected_track()` (#504) to modules. Exposing it
+  is a small, natural Schwung PR and would remove the knob.
 - **`button_passthrough: [118]` is swallowed** (see Phase 0 result) — is that
   a bug in the overtake filter, or does the sampler own Record by design? If
   the latter, the Back → Record flow is the contract and the docs should say so.

@@ -10,7 +10,8 @@
  *   - cable 2, always -- cable 0 is Move's pad protocol and a pitched note
  *     there reaches no track;
  *   - CIN equals the status nibble (note-off 0x8, note-on 0x9);
- *   - the channel is `track` - 1, on every packet;
+ *   - channel 1 on every packet: Move plays an injected note on the selected
+ *     track and ignores the channel, so the tool chooses none;
  *   - a cable-0 note tagged INTERNAL is a PAD ID, not a pitch, and selects
  *     nothing;
  *   - after a stop, every note-on has had its note-off: the host synthesises
@@ -39,15 +40,15 @@ int main(void) {
     void *inst = api->create_instance(NULL, NULL);
     api->set_param(inst, "clear", "on");
     api->set_param(inst, "hum_time", "0");
-    api->set_param(inst, "track", "3");
+    api->set_param(inst, "read_track", "3");
     const char *deg[4] = { "I", "IV", "V", "I" };
     for (int i = 0; i < 4; i++) {
         char b[8]; snprintf(b, sizeof b, "%d", i + 1);
         api->set_param(inst, "sel", b); api->set_param(inst, "degree", deg[i]);
     }
     char v[16];
-    api->get_param(inst, "track", v, sizeof v);
-    if (strcmp(v, "3") != 0) { printf("FAIL: track reads back %s\n", v); bad = 1; }
+    api->get_param(inst, "read_track", v, sizeof v);
+    if (strcmp(v, "3") != 0) { printf("FAIL: read_track reads back %s\n", v); bad = 1; }
     api->get_param(inst, "module_id", v, sizeof v);
     if (strcmp(v, "stacks") != 0) { printf("FAIL: module_id %s\n", v); bad = 1; }
 
@@ -81,7 +82,9 @@ int main(void) {
         uint8_t type = pk[i][1] & 0xF0, ch = pk[i][1] & 0x0F;
         if (cable != 2) { printf("FAIL: pkt %d on cable %d\n", i, cable); bad = 1; }
         if (cin != (type >> 4)) { printf("FAIL: pkt %d CIN %x for status %02x\n", i, cin, type); bad = 1; }
-        if (ch != 2) { printf("FAIL: pkt %d on channel %d, track 3 is channel 2\n", i, ch + 1); bad = 1; }
+        /* Channel 1 whatever Read Track says: Move plays an injected note on
+         * the SELECTED track and ignores the channel, so none is chosen. */
+        if (ch != 0) { printf("FAIL: pkt %d on channel %d, expected 1\n", i, ch + 1); bad = 1; }
         if (type == 0x90 && pk[i][3] > 0) { ons++; sounding[pk[i][2]]++; }
         else if (type == 0x80 || type == 0x90) { offs++; sounding[pk[i][2]]--; }
     }
@@ -119,6 +122,6 @@ int main(void) {
     if (ons2 < 3) { printf("FAIL: after Move's Stop-time CC the audition is silent (%d ons)\n", ons2); bad = 1; }
 
     api->destroy_instance(inst);
-    puts(bad ? "FAIL" : "PASS: the tool entry injects the lap on cable 2, on the track's channel, leaves nothing ringing, and never re-injects what it was handed");
+    puts(bad ? "FAIL" : "PASS: the tool entry injects the lap on cable 2, leaves nothing ringing, and never re-injects what it was handed");
     return bad;
 }

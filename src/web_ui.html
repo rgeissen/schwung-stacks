@@ -1248,7 +1248,7 @@ var BANKS = [
     /* There is no file stamp: it cannot win against Move, which holds the
        active set in memory and autosaves over it (measured at 142s). Stamp
        arms one lap for Move's own recorder. */
-    keys:["patterns","read","read_mode","stamp","clear","lanes","run",
+    keys:["patterns","read","read_mode","read_track","stamp","clear","lanes","run",
           "duplicate","stretch","compress","undo"] },
 ];
 var bank = "chord";
@@ -1288,7 +1288,7 @@ var SPAN = { patterns:6,
   vel:2, gate:2, strum:2,
   /* CLIP: the two-option modes and the actions pair up, so the bank is read
      as rows of related things rather than one column of full-width cards. */
-  read_mode:3, lanes:3, run:3,
+  read_mode:3, read_track:3, lanes:3, run:3,
   read:3, stamp:3, clear:3, duplicate:3, stretch:3, compress:3, undo:3
 };
 /*

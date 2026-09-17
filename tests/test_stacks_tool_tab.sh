@@ -19,7 +19,7 @@ def need(cond, msg):
 need(isinstance(st, dict), "state is not a JSON object")
 need(all(isinstance(v, str) for v in st.values()), "state carries a non-string value (the manager drops those)")
 need(st.get("s", "").startswith("v6|"), "the save blob is not under \"s\"")
-for k in ("prog", "status", "patterns", "track", "module_id", "sel", "scale", "key", "progression", "bars"):
+for k in ("prog", "status", "patterns", "read_track", "module_id", "sel", "scale", "key", "progression", "bars"):
     need(k in st, f"state lacks {k}")
 need(st.get("module_id") == "stacks", "module_id")
 need(st.get("sel") == "2", f"sel should read back 2, got {st.get('sel')}")

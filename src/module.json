@@ -836,6 +836,16 @@
         "default": 0
       },
       {
+        "key": "read_track",
+        "name": "Read Track",
+        "short_name": "RdT",
+        "type": "int",
+        "min": 1,
+        "max": 4,
+        "default": 1,
+        "step": 1
+      },
+      {
         "key": "defoct",
         "name": "Octave Default",
         "short_name": "Oct",
