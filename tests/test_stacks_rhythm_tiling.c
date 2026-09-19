@@ -29,7 +29,7 @@ static int strikes(const char *rhythm, const char *rate) {
     stk_set_param(s, "shape", "maj");
     stk_set_param(s, "rhythm", rhythm);
     s->pend_n = 0;
-    arm_chord(s, 0, 0);
+    arm_chord(s, 0, 0, 0);
     int at[128], n = 0;
     for (int i = 0; i < s->pend_n; i++) {
         int seen = 0;

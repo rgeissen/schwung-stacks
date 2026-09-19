@@ -93,7 +93,7 @@ int main(void){
     char b[8]; snprintf(b, sizeof b, "%d", bars_cases[i]);
     stk_set_param(s, "bars", b);
 
-    int unit = RATE_CLOCKS[s->prog.rate] / STEP_SUBDIV; if (unit < 1) unit = 1;
+    int unit = UNIT_CLOCKS;      /* an eighth of a bar, whatever the rate */
     int clip_u = clampi(s->bars, 1, 16) * bar_units_for(&s->prog);
     int total_u = prog_total_units(&s->prog);
 

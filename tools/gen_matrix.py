@@ -105,7 +105,7 @@ DESC = {
  "uncommon":  "Chromatic and modal material: borrowed iv, backdoor, Phrygian, chromatic mediants, secondary dominants. Plain triads like Common, so Colour applies.",
  "colour":    "How the chord is voiced, not which chord it is: close, open, the drops, shell, rootless, quartal, spread, cluster. The axis <em>Shape</em> cannot express.",
 
- "root":      "The chord's root note; Family and Shape build upward from it. Snapped into the current Scale at the moment it sounds.",
+ "root":      "The chord's root note; Family and Shape build upward from it. A root you name here is exact: the Scale moves only roots chosen by degree.",
  "coct":      "Which octave that root sits in. Moves the whole chord with its shape and inversion intact, leaving the voicing alone.",
  "family":    "<strong>Not a value of its own</strong>: it reads the chord's family and writes <em>Chord Shape</em>. Leaving a family and coming back lands on that family's first chord.",
  "shape":     "<strong>The chord itself</strong>, from intervals through 13ths &mdash; the one thing stored per chord and written into the clip. Includes <em>rest</em>.",
@@ -118,16 +118,16 @@ DESC = {
  "cstrum":    "Spreads this chord's notes across time, lowest first &mdash; a strum rather than every note landing together.",
  "cgate":     "Offsets how much of this chord's length actually sounds, against the global <em>Gate</em>. Shorter reads as a stab.",
  "cmute":     "Silences this chord but keeps it in the progression. Drawn as an outline, so you can still see what it would play.",
- "rhythm":    "35 figures &mdash; the grid, syncopation, clave, jazz comping, rock, house stabs, cinematic pulses. Each covers one BAR and repeats across the chord; <em>hold</em> strikes once and is held.",
+ "rhythm":    "35 figures &mdash; the grid, syncopation, clave, jazz comping, rock, house stabs, cinematic pulses. Anchored to the BAR and repeating across the chord; <em>hold</em> strikes once and is held.",
  "ctrans":    "Transposes this chord in semitones after its shape is built, so the shape survives and only the pitch moves.",
 
  "octave":    "Transposes the whole progression at once. The per-chord <em>Transpose</em> on VOICE rides on top of this.",
  "velocity":  "Base velocity that every chord is measured from. The per-chord <em>Chord Vel</em> is an offset against it.",
  "gate":      "Base proportion of a chord's length that actually sounds. The per-chord <em>Chord Gate</em> offsets this one.",
- "swing":     "Delays the off-beat units. Measured against absolute position rather than the chord's own, so it cannot drift.",
+ "swing":     "Leans the off-beat at the finest level the figure uses: odd 16ths under a 16th figure, the <em>and</em>s under an eighth one. Anchored to the bar.",
  "hum_vel":   "Spreads velocity per note, as a share of the base. Seeded, so the same feel repeats until you randomize it.",
  "roll_vel":  "Re-rolls which deviations the notes get. Same depth, a new feel &mdash; and Stamp writes the take you heard.",
- "hum_time":  "Spreads onsets per note. The spread is shifted so the earliest note still lands on the beat, never clamped.",
+ "hum_time":  "Spreads onsets per note and per hit. The spread is shifted so the earliest note still lands on the beat, never clamped.",
  "roll_time": "Re-rolls the timing spread and leaves velocity where it is, so the two can be dialled in separately.",
 
  "read":      "Reads the clip playing on the track <em>Read Track</em> names (in the browser panel) and names its chords, so you can edit something you already recorded.",

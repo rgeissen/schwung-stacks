@@ -88,7 +88,9 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
  */
 #define RHYTHM_STEPS     16
 #define STK_MAX_PEND     96
+#ifndef SETS_DIR         /* overridable so a test can point Read Clip at a fixture */
 #define SETS_DIR         "/data/UserData/UserLibrary/Sets"
+#endif
 #define CLOCKS_PER_QUARTER 24
 
 static const host_api_v1_t *g_host = NULL;
@@ -505,7 +507,7 @@ static const stk_rhythm_t RHYTHMS[] = {
  * SHAPES[], so Genre jumps and Progression steps: the Family/Shape gesture
  * this module already has.
  *
- * Lengths are in eighths of a step, so 8 is one step and 16 is two.
+ * Lengths are in eighths of a BAR, so 8 is one bar and 16 is two.
  * ====================================================================== */
 typedef enum { GEN_NONE = 0, GEN_POP, GEN_ROCK, GEN_METAL, GEN_JAZZ, GEN_BLUES, GEN_SOUL, GEN_GOSPEL, GEN_FUNK, GEN_RNB, GEN_BOSSA, GEN_LATIN, GEN_HOUSE, GEN_MELODIC, GEN_LOFI, GEN_REGGAE, GEN_COUNTRY, GEN_CINE } stk_genre_t;
 static const char *const GENRES[] = { "none", "Pop", "Rock", "Metal", "Jazz", "Blues", "Soul", "Gospel", "Funk", "R&B", "Bossa", "Latin", "House", "Melodic", "Lo-fi", "Reggae", "Country", "Cinematic" };
@@ -749,7 +751,7 @@ typedef struct {
     int root;   /* MIDI note of the chord root */
     int shape;  /* index into SHAPES */
     int inv;    /* -3..+3; positive rotates up, negative the same an 8ve down */
-    int len;    /* sounding length, in eighths of one step */
+    int len;    /* slot and sounding length, in eighths of a bar */
     int off;    /* start offset within the step, in eighths */
 
     /* --- BANK 2, the per-chord voice ---
@@ -775,6 +777,20 @@ typedef struct {
     int mute;    /* 1 = this chord is skipped, and drawn hollow */
     int rhythm;  /* index into RHYTHMS[] */
     int trans;   /* -12..+12 semitones, after the shape is built */
+    /*
+     * EXACT: the root is the one that was WRITTEN, and the scale may not
+     * move it. Set by every path that names a root outright -- the Root
+     * knob, the libraries -- and cleared by the one path that asks for a
+     * root BY DEGREE, which is the only kind of root the scale owns.
+     *
+     * Without it the library was defeated by its own player: the entries are
+     * stored in semitones precisely so a bVII or a borrowed bVI can step
+     * outside the scale, and `chord_notes` then snapped that root to the
+     * nearest scale tone -- "bVII descent" in C Major played C G B F, and the
+     * staff captioned the B as "A#" because the caption read the written
+     * root. Measured 2026-09-19; tests/test_stacks_exact_root.sh.
+     */
+    int exact;
 } stk_chord_t;
 
 typedef struct {
@@ -830,8 +846,6 @@ static int prog_total_units(const stk_prog_t *p) {
     return t < 1 ? 1 : t;
 }
 
-/* Step length in MIDI clocks. 24 PPQN, 4/4 assumed for the bar rates. */
-static const int RATE_CLOCKS[] = { 24 * 8, 24 * 4, 24 * 2, 24 * 1 };
 
 /*
  * THE PLACEMENT GRID IS FIXED AT AN EIGHTH OF A STEP, deliberately.
@@ -889,7 +903,7 @@ static int default_len(const stk_prog_t *p) {
 }
 
 static const char *RATE_OPTS[] = { "2 bar", "1 bar", "1/2", "1/4" };
-#define NUM_RATES ((int)(sizeof(RATE_CLOCKS) / sizeof(RATE_CLOCKS[0])))
+#define NUM_RATES ((int)(sizeof(RATE_DEFAULT_LEN) / sizeof(RATE_DEFAULT_LEN[0])))
 
 /* One scheduled note-on: armed when the step starts, emitted when due. */
 typedef struct {
@@ -1544,19 +1558,19 @@ static int coloured_intervals(const stk_shape_t *sh, int styled, int st_colour,
     return n;
 }
 
-static int chord_notes_g(const stk_chord_t *c, int octave, int snap_scale, int snap_key,
-                         int st_colour, int grp, const int *prev, int pn,
-                         int *out, int max_out) {
-    if (!c || c->shape < 0 || c->shape >= NUM_SHAPES) return 0;
-    const stk_shape_t *sh = &SHAPES[c->shape];
-
+/*
+ * THE ROOT THAT SOUNDS, in one place: the written root, snapped to the scale
+ * unless the chord is `exact`, then transposed. The sequencer builds from it
+ * and the staff names the chord by it, so the caption cannot name a root the
+ * synth did not play -- which it did while the caption read `c->root`.
+ *
+ * Snap the ROOT to the scale, never the chord tones: a major third forced
+ * into a minor scale stops being the chord the name promises. The scale
+ * chooses which roots a DEGREE can reach; the shape decides what sits on top.
+ */
+static int sounding_root(const stk_chord_t *c, int octave, int snap_scale, int snap_key) {
     int root = c->root + octave * 12;
-    /*
-     * Snap the ROOT to the scale, never the chord tones: a major third forced
-     * into a minor scale stops being the chord the name promises. The scale
-     * chooses which roots are reachable; the shape decides what sits on top.
-     */
-    if (snap_scale > 0 && snap_scale < NUM_SCALES) {
+    if (!c->exact && snap_scale > 0 && snap_scale < NUM_SCALES) {
         uint16_t mask = SCALES[snap_scale].mask;
         int pc = (((root - snap_key) % 12) + 12) % 12;
         if (!(mask & (1u << pc))) {
@@ -1566,8 +1580,16 @@ static int chord_notes_g(const stk_chord_t *c, int octave, int snap_scale, int s
             }
         }
     }
+    return root + c->trans;   /* transpose the whole chord, shape intact */
+}
 
-    root += c->trans;   /* transpose the whole chord, shape intact */
+static int chord_notes_g(const stk_chord_t *c, int octave, int snap_scale, int snap_key,
+                         int st_colour, int grp, const int *prev, int pn,
+                         int *out, int max_out) {
+    if (!c || c->shape < 0 || c->shape >= NUM_SHAPES) return 0;
+    const stk_shape_t *sh = &SHAPES[c->shape];
+
+    int root = sounding_root(c, octave, snap_scale, snap_key);
 
     /*
      * COLOUR reshapes every chord to one density, without touching what the
@@ -1759,16 +1781,24 @@ static int humanised_velocity(const stk_t *st, int chord, int voice) {
  *
  * Both callers ask here now, and the wire does too, so the three cannot drift.
  */
-static int note_velocity(const stk_t *st, const stk_chord_t *c, int chord, int voice) {
+/*
+ * PER HIT, NOT PER CHORD. A rhythm figure strikes a chord up to sixteen times
+ * a bar, and the deviation used to be hashed on (chord, voice) alone -- so
+ * every hit of the bar got the identical offset and the identical velocity,
+ * and "humanise" on a 16th figure was a constant lean repeated sixteen times,
+ * which is the opposite of a human. The hit index joins the hash; hit 0 hashes
+ * exactly as before, so a saved seed still plays the same first strike.
+ */
+static int note_velocity(const stk_t *st, const stk_chord_t *c, int chord, int voice, int hit) {
     int base = clampi(st->velocity + c->vel, 1, 127);
-    return clampi(base + (humanised_velocity(st, chord, voice) - st->velocity), 1, 127);
+    return clampi(base + (humanised_velocity(st, chord, voice + 16 * hit) - st->velocity), 1, 127);
 }
 
 /* Deviation in CLOCKS, both directions. The caller clamps the resulting onset
  * so a chord can never be dragged in front of its own step. */
-static int humanised_delay(const stk_t *st, int chord, int voice, int eighth) {
+static int humanised_delay(const stk_t *st, int chord, int voice, int hit, int eighth) {
     if (st->hum_time <= 0) return 0;
-    int r = hash_bipolar(st->seed_time, chord, voice + 64);
+    int r = hash_bipolar(st->seed_time, chord, voice + 64 + 16 * hit);
     return (int)((long)eighth * r * st->hum_time / 100000L);
 }
 
@@ -1939,36 +1969,47 @@ static int read_clip_chords(int track, stk_prog_t *out) {
     free(ns);
     if (groups <= 0) { out->count = 0; rc = 0; goto done; }
 
-    /* Step grid from the first gap; a single chord keeps one bar. */
-    double step_beats = (groups >= 2) ? (onset[1] - onset[0]) : 4.0;
-    if (step_beats < 0.25) step_beats = 0.25;
-    int rate = 1;
-    double best_err = 1e9;
-    for (int r = 0; r < NUM_RATES; r++) {
-        double beats = (double)RATE_CLOCKS[r] / (double)CLOCKS_PER_QUARTER;
-        double err = fabs(beats - step_beats);
-        if (err < best_err) { best_err = err; rate = r; }
-    }
-    out->rate = rate;
-    double grid = (double)RATE_CLOCKS[rate] / (double)CLOCKS_PER_QUARTER;
-    double eighth = grid / 8.0;
-
+    /*
+     * PLACED AS DURATIONS, IN EIGHTHS OF A BAR -- the model the sequencer
+     * plays, where chord k begins where chord k-1 ends.
+     *
+     * This used to lay the clip on a STEP grid inferred from the first gap and
+     * count `len` in eighths of that step, which was the pre-2026-09 model:
+     * once `len` became an absolute eighth of a bar, a clip of two-bar chords
+     * (step = 2 bars, so `len` 8 = "one step") came back as one-bar chords
+     * and an eight-bar clip imported as four; anything not on a uniform grid
+     * landed on the wrong bar, and `len` was still clamped at 16 against a
+     * range of 64. Measured 2026-09-19, tests/test_stacks_read_clip.sh.
+     *
+     * So: a chord's slot runs from its onset to the next chord's onset, and
+     * the last runs for as long as it sounds. Only the FIRST chord can carry
+     * an offset -- every later slot starts exactly where its chord does, so
+     * the offset is the whole slot's and nothing is lost to it.
+     */
+    const double unit_beats = 4.0 / UNITS_PER_BAR;   /* an eighth of a 4/4 bar */
+    int start_u[STK_MAX_CHORDS + 1];
+    for (int g = 0; g < groups; g++)
+        start_u[g] = (int)floor(onset[g] / unit_beats + 0.5);
+    start_u[groups] = start_u[groups - 1]
+                    + (int)floor(dur[groups - 1] / unit_beats + 0.5);
+    int first_off = clampi(start_u[0], 0, 15);
     for (int g = 0; g < groups; g++) {
         int root, shape, inv;
         name_chord(pitches[g], npitch[g], &root, &shape, &inv);
-        double step_start = onset[0] + grid * g;
-        int off = (int)floor((onset[g] - step_start) / eighth + 0.5);
-        int ln  = (int)floor(dur[g] / eighth + 0.5);
-        if (off < 0) off = 0;
-        if (off > 15) off = 15;
-        if (ln < 1) ln = 1;
-        if (ln > 16) ln = 16;
-        out->ch[g].root = root;
+        int ln = start_u[g + 1] - start_u[g];
+        if (g == 0) ln += first_off;              /* the first slot starts at zero */
+        out->ch[g].root  = root;
         out->ch[g].shape = shape;
-        out->ch[g].inv = inv;
-        out->ch[g].len = ln;
-        out->ch[g].off = off;
+        out->ch[g].inv   = inv;
+        out->ch[g].exact = 1;      /* the clip held these notes; the scale may not move them */
+        out->ch[g].len   = clampi(ln, 1, STK_MAX_LEN);
+        out->ch[g].off   = g == 0 ? first_off : 0;
     }
+    /* Rate is only what a NEW chord gets; the clip's own slot length is the
+     * natural choice, when it is one of the four. */
+    out->rate = 1;
+    for (int r = 0; r < NUM_RATES; r++)
+        if (RATE_DEFAULT_LEN[r] == out->ch[0].len) { out->rate = r; break; }
     out->count = groups;
     rc = groups;
 
@@ -2122,14 +2163,25 @@ static int emit_off_all(stk_t *st, uint8_t out[][3], int lens[], int max_out, in
     return n;
 }
 
+/* How late a grid position leans under Swing -- see the note in arm_chord. */
+static int swing_lean(const stk_t *st, int swing16, int sub, int pos) {
+    if (st->swing <= 0) return 0;
+    if (swing16 ? (pos & 1) : ((pos & 3) == 2))
+        return (swing16 ? sub : 2 * sub) * st->swing / 100;
+    return 0;
+}
+
 /*
  * Arm a step: work out every note's pitch, velocity and onset ONCE, then let
  * tick emit each as its moment arrives. Nothing is sounded here.
  *
  * `hold` is a pad being held, which sustains until release; a sequenced chord
- * gets `len` scaled by `gate`.
+ * gets `len` scaled by `gate`. `phase` is where the chord's onset falls in
+ * clocks from a bar line -- the sequencer passes its absolute onset, an
+ * audition the chord's place in the phrase -- and it is what anchors the
+ * figure to the BAR (see below).
  */
-static void arm_chord(stk_t *st, int step, int hold) {
+static void arm_chord(stk_t *st, int step, int hold, int phase) {
     st->pend_n = 0;
     if (step < 0 || step >= st->prog.count) return;
     const stk_chord_t *c = &st->prog.ch[step];
@@ -2157,35 +2209,18 @@ static void arm_chord(stk_t *st, int step, int hold) {
      * STRUM is a spread ACROSS THE VOICES, humanise is a deviation PER VOICE,
      * and they are added rather than combined: strum is the shape you asked
      * for and humanise is the imprecision on top of it. Keeping them separate
-     * is what lets you hear a tight strum and a loose one.
+     * is what lets you hear a tight strum and a loose one. The strum is the
+     * same at every hit -- it is a shape; the humanise is rolled per hit.
      */
-    int delay[STK_MAX_TONES];
-    int lo = 0;
-    for (int i = 0; i < cnt; i++) {
-        int d = hold ? 0 : humanised_delay(st, step, i, eighth);
-        if (!hold && c->strum > 0 && cnt > 1)
-            d += (int)((long)eighth * c->strum * i / (100L * (cnt - 1)));
-        delay[i] = d;
-        if (d < lo) lo = d;
-    }
+    int strum[STK_MAX_TONES];
+    for (int i = 0; i < cnt; i++)
+        strum[i] = (!hold && c->strum > 0 && cnt > 1)
+                 ? (int)((long)eighth * c->strum * i / (100L * (cnt - 1))) : 0;
 
-    /*
-     * THE RHYTHM TILES, IT DOES NOT STRETCH. The mask covers one STEP, and a
-     * chord two steps long plays the figure twice -- which is what a figure
-     * does. Stretching would make the same pattern a different rhythm
-     * depending on how long you happened to hold the chord.
-     *
-     * A hit lasts until the next one, scaled by Gate, so a dense pattern
-     * shortens itself and needs no separate length control.
-     */
     uint16_t mask = RHYTHMS[clampi(c->rhythm, 0, NUM_RHYTHMS - 1)].mask;
     if (!mask) mask = 1u;
-    /* A rhythm figure spans ONE BAR and tiles -- clave, tresillo and comping
-     * patterns are bar-length things, and the figure must not change shape
-     * because Rate moved. */
-    int sub = BAR_CLOCKS / RHYTHM_STEPS;          /* one grid position */
-    if (sub < 1) sub = 1;
     int total = eighth * (c->len < 1 ? 1 : c->len);   /* the chord's own length */
+
     /*
      * "HOLD" MEANS ONCE, FOR THE WHOLE CHORD -- it must not tile.
      *
@@ -2196,35 +2231,102 @@ static void arm_chord(stk_t *st, int step, int hold) {
      * chords -- audibly, and drawn that way too, so it read as the module
      * splitting the chord in half.
      *
-     * (It only surfaced when `len` became an absolute duration. Before that a
-     * chord was measured in units of Rate, so its length and the rhythm's span
-     * were the same thing by construction and could not disagree.)
+     * A held pad is the same shape from the other side: one strike at the
+     * onset, sustained until the release, whatever figure the chord carries.
      */
-    int single = (mask == 1u);
-    int hit_len = single ? total : BAR_CLOCKS;    /* gap to the next hit */
-    if (!single)
-        for (int b = 1; b < RHYTHM_STEPS; b++)
-            if (mask & (1u << b)) { hit_len = b * sub; break; }
-    int sound = hit_len * gate / 100;
-    if (sound < 1) sound = 1;
-
-    for (int at = 0; at < total && st->pend_n < STK_MAX_PEND; at += sub) {
-        int pos = (at / sub) % RHYTHM_STEPS;
-        if (!(mask & (1u << pos))) continue;
-        if (single && at > 0) break;              /* one hit, held -- see above */
-        /* Swing displaces the off-grid positions, measured against the
-         * chord's absolute place rather than its own start. */
-        int swing_at = (st->swing > 0 && (pos & 1)) ? sub * st->swing / 100 : 0;
+    if (hold || mask == 1u) {
+        int sound = total * gate / 100;
+        if (sound < 1) sound = 1;
+        int delay[STK_MAX_TONES], lo = 0;
+        for (int i = 0; i < cnt; i++) {
+            delay[i] = strum[i] + (hold ? 0 : humanised_delay(st, step, i, 0, eighth));
+            if (delay[i] < lo) lo = delay[i];
+        }
         for (int i = 0; i < cnt && st->pend_n < STK_MAX_PEND; i++) {
             st->pend[st->pend_n].note  = tones[i];
-            st->pend[st->pend_n].vel   = hold ? base_vel
-                                              : note_velocity(st, c, step, i);
-            st->pend[st->pend_n].at    = at + swing_at + delay[i] - lo;
+            st->pend[st->pend_n].vel   = hold ? base_vel : note_velocity(st, c, step, i, 0);
+            st->pend[st->pend_n].at    = delay[i] - lo;
             st->pend[st->pend_n].dur   = hold ? STK_HOLD_FOREVER : sound;
             st->pend[st->pend_n].fired = 0;
             st->pend_n++;
         }
-        if (hold) break;         /* a held pad sounds once and sustains */
+        return;
+    }
+
+    /*
+     * THE RHYTHM TILES, IT DOES NOT STRETCH. The mask covers one BAR and a
+     * chord two bars long plays the figure twice -- which is what a figure
+     * does. Stretching would make the same pattern a different rhythm
+     * depending on how long you happened to hold the chord.
+     *
+     * AND IT IS ANCHORED TO THE BAR, NOT TO THE CHORD. A clave, a tresillo, a
+     * bossa are defined by where in the BAR their hits fall; a chord that
+     * starts on beat three must play the second half of the figure, not the
+     * first half again. Counting the grid from the chord's own onset played
+     * two half-bar chords under "son 3-2" as `3 | 3` -- the "2" side never
+     * sounded (measured 2026-09-19, tests/test_stacks_figure_phase.sh). So
+     * the grid position is the chord's place in the bar plus its own elapsed
+     * time, and only the chord's LENGTH is counted from its onset.
+     */
+    int sub = BAR_CLOCKS / RHYTHM_STEPS;          /* one grid position */
+    if (sub < 1) sub = 1;
+    int base = (((phase % BAR_CLOCKS) + BAR_CLOCKS) % BAR_CLOCKS) / sub;
+    /*
+     * SWING DISPLACES THE OFF-BEAT AT THE FINEST LEVEL THE FIGURE USES.
+     *
+     * The grid is sixteenths and swing moved the odd sixteenths -- Move's own
+     * swing does the same -- which left every figure written on the eighth
+     * grid untouched: turning Swing under "eighth" changed nothing at all,
+     * and that is the one figure swing is FOR. A figure with no odd-sixteenth
+     * hit is an eighth-note figure, so its off-beat eighths (the "and"s, grid
+     * 2 6 10 14) are what lean; a figure that uses the sixteenths keeps the
+     * sixteenth swing, because leaning both levels at once collides them.
+     * The lean is `swing` percent of the level's own gap.
+     */
+    int swing16 = (mask & 0xAAAAu) != 0;
+    int hit = 0;
+
+    for (int at = 0; at < total && st->pend_n < STK_MAX_PEND; at += sub) {
+        int pos = (base + at / sub) % RHYTHM_STEPS;
+        if (!(mask & (1u << pos))) continue;
+        /*
+         * A HIT LASTS UNTIL ITS OWN NEXT HIT, scaled by Gate -- so a dense
+         * pattern shortens itself and needs no separate length control.
+         *
+         * ITS OWN, not the figure's first gap applied to every hit: with the
+         * gap to the second mask bit used throughout, an uneven figure gave
+         * its short hits a long duration, and the note-off of hit N then fell
+         * AFTER hit N+1 had re-struck the same pitches -- cutting it. In
+         * tresillo (3+3+2) the "2" sounded for four clocks, a 32nd, before
+         * the previous hit's release silenced it.
+         */
+        int gap = RHYTHM_STEPS;
+        for (int b = 1; b < RHYTHM_STEPS; b++)
+            if (mask & (1u << ((pos + b) % RHYTHM_STEPS))) { gap = b; break; }
+        /* A swung hit is LATE, so it is shorter by its own lean and longer
+         * by the next hit's -- otherwise the note runs into the next strike
+         * of the same pitches and is cut off by its retrigger. */
+        int swing_at = swing_lean(st, swing16, sub, pos);
+        int sound = (gap * sub - swing_at
+                     + swing_lean(st, swing16, sub, (pos + gap) % RHYTHM_STEPS))
+                    * gate / 100;
+        if (sound < 1) sound = 1;
+        int delay[STK_MAX_TONES], lo = 0;
+        for (int i = 0; i < cnt; i++) {
+            delay[i] = strum[i] + humanised_delay(st, step, i, hit, eighth);
+            if (delay[i] < lo) lo = delay[i];
+        }
+        /* Shifted so the earliest voice lands on the hit rather than clamped
+         * at it -- clamping makes a chord tighter the more you humanise. */
+        for (int i = 0; i < cnt && st->pend_n < STK_MAX_PEND; i++) {
+            st->pend[st->pend_n].note  = tones[i];
+            st->pend[st->pend_n].vel   = note_velocity(st, c, step, i, hit);
+            st->pend[st->pend_n].at    = at + swing_at + delay[i] - lo;
+            st->pend[st->pend_n].dur   = sound;
+            st->pend[st->pend_n].fired = 0;
+            st->pend_n++;
+        }
+        hit++;
     }
 }
 
@@ -2234,9 +2336,27 @@ static int emit_due(stk_t *st, int elapsed,
     for (int i = 0; i < st->pend_n && n < max_out; i++) {
         if (st->pend[i].fired) continue;
         if (elapsed < st->pend[i].at) continue;
-        int v = -1;
-        for (int j = 0; j < STK_MAX_VOICES; j++) if (st->voice[j].note < 0) { v = j; break; }
+        /*
+         * A PITCH ALREADY SOUNDING IS RETRIGGERED, NOT DOUBLED. Two entries
+         * for one note meant the older one's release cut the newer one
+         * mid-flight -- the same failure the per-hit gaps above fix from the
+         * other side, and it can still arise across chords that share a
+         * pitch. One voice per pitch: release it, then strike it again.
+         */
+        int v = -1, retrig = 0;
+        for (int j = 0; j < STK_MAX_VOICES; j++)
+            if (st->voice[j].note == st->pend[i].note) { v = j; retrig = 1; break; }
+        if (v < 0)
+            for (int j = 0; j < STK_MAX_VOICES; j++) if (st->voice[j].note < 0) { v = j; break; }
         if (v < 0) break;
+        if (retrig) {
+            if (n >= max_out - 1) break;      /* the off and the on go together */
+            out[n][0] = 0x80;
+            out[n][1] = (uint8_t)st->pend[i].note;
+            out[n][2] = 0;
+            lens[n] = 3;
+            n++;
+        }
         st->voice[v].note = st->pend[i].note;
         st->voice[v].ch = 0;
         st->voice[v].off_at = st->pend[i].dur == STK_HOLD_FOREVER
@@ -2713,6 +2833,7 @@ static int stk_tick(void *instance, int frames, int sample_rate,
      * above 8 indistinguishable from 8.
      */
     int want_id = 0, want_step = -1, hold = 0, onset_pulse = 0;
+    int phase = 0;      /* the chord's onset, in clocks from a bar line */
 
     if (st->held_pad >= 0 && st->held_pad < st->prog.count) {
         want_id = -1000 - st->held_pad;
@@ -2723,6 +2844,10 @@ static int stk_tick(void *instance, int frames, int sample_rate,
         if (st->force_step >= 0 && st->force_step < st->prog.count) {
             want_id = -2000 - st->force_step;
             want_step = st->force_step;
+            /* An audition plays the chord where it SITS in the phrase, so the
+             * figure it carries is the one the sequence would play. */
+            phase = (chord_slot_start(&st->prog, want_step)
+                     + st->prog.ch[want_step].off) * UNIT_CLOCKS;
             if (st->armed_id == want_id) {
                 /* Already sounding. While the jog is HELD, re-arm in phase
                  * when the figure reaches the chord's end, so holding loops
@@ -2773,9 +2898,25 @@ static int stk_tick(void *instance, int frames, int sample_rate,
             st->pend_n = 0;
             return emit_off_all(st, out, lens, max_out, n);
         }
-        /* Position inside the clip, then inside the phrase that tiles it. */
+        /*
+         * Position inside the clip, then inside the phrase that tiles it --
+         * and WHICH TILE, because the two facts below must name it.
+         *
+         * They did not, and a phrase shorter than the clip broke in two ways
+         * (measured 2026-09-19, tests/test_stacks_tiling.sh): a one-chord
+         * progression in a four-bar clip sounded ONCE per lap, because the
+         * second tile's chord had the same `want_id` as the first and never
+         * re-armed; and on the second tile of any phrase `onset_pulse` was
+         * still the first tile's, so `elapsed` began a whole phrase late and
+         * every rhythm hit of the chord fired at once, as one stacked chord.
+         */
         int pos_u  = (st->pulse % total_c) / unit;
-        if (total_u > 0) pos_u %= total_u;
+        int tile = 0, tiles = 1;
+        if (total_u > 0) {
+            tile   = pos_u / total_u;
+            pos_u %= total_u;
+            tiles  = (clip_u + total_u - 1) / total_u;
+        }
 
         /* Walk the durations to find the chord this moment belongs to. */
         int idx = 0, acc = 0;
@@ -2791,16 +2932,17 @@ static int stk_tick(void *instance, int frames, int sample_rate,
         /* Before its offset the chord has not started; that is not the same as
          * "nothing is playing", and must not silence the one still ringing. */
         if (pos_u >= onset_u) {
-            /* Absolute across passes, so looping round to the same chord
-             * re-arms it rather than reading as "still that one". */
-            want_id = cycle * st->prog.count + idx + 1;
+            /* Absolute across passes AND tiles, so looping round to the same
+             * chord re-arms it rather than reading as "still that one". */
+            want_id = (cycle * tiles + tile) * st->prog.count + idx + 1;
             want_step = idx;
-            onset_pulse = cycle * total_c + onset_u * unit;
+            onset_pulse = cycle * total_c + (tile * total_u + onset_u) * unit;
+            phase = onset_pulse;
         }
     }
 
     if (want_id != 0 && want_id != st->armed_id) {
-        arm_chord(st, want_step, hold);
+        arm_chord(st, want_step, hold, phase);
         st->armed_id = want_id;
         st->armed_at = onset_pulse;
         st->cur_step = want_step;   /* what `prog` reports as playing */
@@ -3097,7 +3239,7 @@ static int is_trigger_key(const char *k) {
 
 /* Call around any change that can turn a rest into a chord. */
 static void fill_from_rest(stk_t *st, stk_chord_t *c, int was_rest) {
-    if (was_rest && c->shape != SHAPE_REST) c->root = default_root(st);
+    if (was_rest && c->shape != SHAPE_REST) { c->root = default_root(st); c->exact = 0; }
 }
 
 /*
@@ -3207,6 +3349,7 @@ static void apply_lib(stk_t *st, const stk_preset_t *lib, int n_lib,
         c->len    = pr->s[i].len;
         c->rhythm = 0;
         c->styled = styled;
+        c->exact  = 1;      /* the bVII is the point of the entry -- see stk_chord_t */
     }
     st->prog.count = pr->n > STK_MAX_CHORDS ? STK_MAX_CHORDS : pr->n;
     /*
@@ -3342,6 +3485,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         if (step == 0) return;
         if (strcmp(key, "root") == 0) {
             c->root = ROOT_BASE + clampi(c->root - ROOT_BASE + step, 0, ROOT_SPAN - 1);
+            c->exact = 1;                       /* you named it; the scale may not move it */
             audition(st);
         } else if (strcmp(key, "shape") == 0) {
             int was_rest = (c->shape == SHAPE_REST);
@@ -3424,7 +3568,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         st->sel = clampi(atoi(val), 1, st->prog.count);
     } else if (strcmp(key, "root") == 0) {
         int i = root_index(val);
-        if (i >= 0) { c->root = ROOT_BASE + i; audition(st); }
+        if (i >= 0) { c->root = ROOT_BASE + i; c->exact = 1; audition(st); }
     } else if (strcmp(key, "shape") == 0) {
         int i = shape_index(val);
         if (i >= 0) {
@@ -3663,6 +3807,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
                     int was_rest = (c->shape == SHAPE_REST);
                     c->root = clampi(default_root(st) + semi,
                                      ROOT_BASE, ROOT_BASE + ROOT_SPAN - 1);
+                    c->exact = 0;               /* a degree is the scale's to move */
                     if (was_rest) c->shape = SHAPE_TRIAD_DEFAULT;
                     break;
                 }
@@ -4026,10 +4171,12 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         for (int i = 0; i < 25 && c; i++) { c = strchr(c, '|'); if (c) c++; }
         int k = 0;
         while (c && *c && *c != '"' && *c != '@' && *c != '#' && k < STK_MAX_CHORDS) {
-            int r, sh, iv, ln, of, str_, cv, cg, mu, rh, tr, co, sy;
-            if (sscanf(c, "%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
+            int r, sh, iv, ln, of, str_, cv, cg, mu, rh, tr, co, sy, ex = 0;
+            /* Thirteen fields, and a FOURTEENTH (`exact`) that a blob written
+             * before it existed simply lacks: thirteen matched is a chord. */
+            if (sscanf(c, "%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
                        &r, &sh, &iv, &ln, &of, &str_, &cv, &cg, &mu, &rh, &tr,
-                       &co, &sy) == 13) {
+                       &co, &sy, &ex) >= 13) {
                 stk_chord_t *q = &st->prog.ch[k];
                 q->root   = clampi(r, 0, 127);
                 q->shape  = clampi(sh, 0, NUM_SHAPES - 1);
@@ -4044,6 +4191,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
                 q->trans  = clampi(tr, -12, 12);
                 q->colour = clampi(co, 0, NUM_COLOURS - 1);
                 q->styled = sy ? 1 : 0;
+                q->exact  = ex ? 1 : 0;
                 k++;
             }
             const char *semi = strchr(c, ';');
@@ -4080,10 +4228,10 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
             const char *q = strchr(g, ':');
             int m = 0;
             while (q && *++q && *q != '@' && *q != '"' && m < STK_MAX_CHORDS) {
-                int r, sh, iv, ln, of, str_, cv, cg, mu, rh, tr, co, sy;
-                if (sscanf(q, "%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
+                int r, sh, iv, ln, of, str_, cv, cg, mu, rh, tr, co, sy, ex = 0;
+                if (sscanf(q, "%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
                            &r, &sh, &iv, &ln, &of, &str_, &cv, &cg, &mu, &rh,
-                           &tr, &co, &sy) == 13) {
+                           &tr, &co, &sy, &ex) >= 13) {
                     stk_chord_t *z = &P->prog.ch[m];
                     z->root   = clampi(r, 0, 127);
                     z->shape  = clampi(sh, 0, NUM_SHAPES - 1);
@@ -4098,6 +4246,7 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
                     z->trans  = clampi(tr, -12, 12);
                     z->colour = clampi(co, 0, NUM_COLOURS - 1);
                     z->styled = sy ? 1 : 0;
+                    z->exact  = ex ? 1 : 0;
                     m++;
                 }
                 const char *comma = strchr(q, ',');
@@ -4232,7 +4381,12 @@ static int fmt_prog(const stk_t *st, char *buf, int buf_len) {
     int pv_prev[STK_MAX_TONES + 2], pv_n = 0;
     for (int k = 0; k < st->prog.count && at < buf_len - 1; k++) {
         const stk_chord_t *c = &st->prog.ch[k];
+        /* The NAME is the chord that SOUNDS -- snapped and transposed -- and
+         * the ROOT field after it is the one the knob edits. They differ
+         * exactly when the scale or Transpose moved the chord, which is what
+         * the caption is there to tell you. */
         int pc = ((c->root % 12) + 12) % 12;
+        int spc = ((sounding_root(c, 0, st->prog.scale, st->prog.key) % 12) + 12) % 12;
         int is_rest = (c->shape == SHAPE_REST);
         /*
          * v3 adds the ROOT NAME beside the chord name. The takeover's top row
@@ -4275,7 +4429,7 @@ static int fmt_prog(const stk_t *st, char *buf, int buf_len) {
          */
         at += snprintf(buf + at, buf_len - at, "%s%s%s,%s%d,%d,%d,%d,%d,%d,%d,",
                        k ? ";" : "",
-                       is_rest ? "" : NOTE_NAMES[pc],
+                       is_rest ? "" : NOTE_NAMES[spc],
                        is_rest ? "REST" : suffix,
                        NOTE_NAMES[pc], oct, c->inv, c->len, c->off,
                        eff_vel, c->mute ? 1 : 0,
@@ -4288,7 +4442,7 @@ static int fmt_prog(const stk_t *st, char *buf, int buf_len) {
         for (int q = 0; q < pv_n; q++) pv_prev[q] = tones[q];
         for (int i = 0; i < n && at < buf_len - 1; i++)
             at += snprintf(buf + at, buf_len - at, "%s%d:%d", i ? "." : "",
-                           tones[i], note_velocity(st, c, k, i));
+                           tones[i], note_velocity(st, c, k, i, 0));
     }
     return at;
 }
@@ -4535,10 +4689,11 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
         for (int k = 0; k < st->prog.count && at < buf_len - 40; k++) {
             const stk_chord_t *q = &st->prog.ch[k];
             at += snprintf(buf + at, buf_len - at,
-                           "%s%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
+                           "%s%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
                            k ? ";" : "", q->root, q->shape, q->inv, q->len,
                            q->off, q->strum, q->vel, q->gate,
-                           q->mute, q->rhythm, q->trans, q->colour, q->styled);
+                           q->mute, q->rhythm, q->trans, q->colour, q->styled,
+                           q->exact);
         }
         /*
          * THE PATTERNS RIDE ALONG, after the buffer and behind a marker.
@@ -4563,10 +4718,11 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
             for (int k = 0; k < g->count && at < buf_len - 48; k++) {
                 const stk_chord_t *q = &g->ch[k];
                 at += snprintf(buf + at, buf_len - at,
-                               "%s%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
+                               "%s%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d.%d",
                                k ? "," : "", q->root, q->shape, q->inv, q->len,
                                q->off, q->strum, q->vel, q->gate,
-                               q->mute, q->rhythm, q->trans, q->colour, q->styled);
+                               q->mute, q->rhythm, q->trans, q->colour, q->styled,
+                               q->exact);
             }
         }
         /* And WHICH slot this buffer came from -- otherwise a restored set

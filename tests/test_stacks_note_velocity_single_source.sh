@@ -41,9 +41,12 @@ fi
 # The consumers must go through the shared helper: playback and the wire
 # (the file stamp was the third, and went with the file write on 2026-09-15 --
 # Move records the take now, so the wire IS the stamp).
+# (Playback asks per HIT since 2026-09-19 -- the sequenced hit and the single
+# strike of a hold/`hold` figure -- and the wire asks for hit 0.)
 for site in \
-  "note_velocity(st, c, step, i)" \
-  "note_velocity(st, c, k, i)"
+  "note_velocity(st, c, step, i, hit)" \
+  "note_velocity(st, c, step, i, 0)" \
+  "note_velocity(st, c, k, i, 0)"
 do
   if ! grep -q "$site" "$SRC"; then
     echo "FAIL: expected a call site missing: $site"

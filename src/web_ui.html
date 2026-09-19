@@ -724,25 +724,29 @@ var cv = document.getElementById("roll"), cx = cv.getContext("2d"), hits = [];
  * THE RHYTHM IS DRAWN AS THE HITS IT PLAYS -- the same rule the Move's own
  * staff follows (canvas.js), and ported rather than reinvented so the two
  * surfaces cannot disagree about what a bossa looks like. The mask covers ONE
- * step and TILES across the chord, exactly as the scheduler does; a single
+ * BAR, anchored to it, and TILES across the chord, exactly as the scheduler does; a single
  * solid block made every pattern look like every other one and the only way
  * to know which was set was to remember choosing it.
  *
  * "hold" (mask 1) is one hit for the whole chord and must NOT tile -- tiling
  * it draws a two-bar chord as two one-bar blocks.
  */
-function hitSegs(c, w, upb){
+/* `phaseU` is where in the bar the chord starts: the figure is anchored to
+   the BAR, as the scheduler anchors it, so a chord on beat three shows the
+   second half of its clave. A chord that reaches no hit draws none. */
+function hitSegs(c, w, upb, phaseU){
   var mask = c.mask || 1, len = Math.max(1, c.len), step = Math.max(1, upb || 8);
-  var xs = [], tiles = (mask === 1) ? 1 : Math.ceil(len / step);
+  var ph = (mask === 1) ? 0 : ((phaseU || 0) % step);
+  var xs = [], tiles = (mask === 1) ? 1 : Math.ceil((len + ph) / step);
   for (var t = 0; t < tiles; t++){
     for (var b = 0; b < 16; b++){
       if (!(mask & (1 << b))) continue;
-      var u = t * step + (b / 16) * step;
+      var u = t * step + (b / 16) * step - ph;
+      if (u < 0) continue;
       if (u >= len) break;
       xs.push((u / len) * w);
     }
   }
-  if (!xs.length) xs.push(0);
   var segs = [];
   for (var i = 0; i < xs.length; i++){
     var sx = xs[i], end = (i + 1 < xs.length) ? xs[i + 1] - 1 : w;
@@ -878,7 +882,7 @@ function drawRoll(p, now){
       /* MUTED: the shape stays, the fill goes. Same language the Move's own
          staff uses, so both surfaces describe muting identically. */
       cx.strokeStyle = "#5A6675"; cx.lineWidth = 1.4;
-      var msegs = hitSegs(c, w, p.stepUnits);
+      var msegs = hitSegs(c, w, p.stepUnits, at + c.off);
       c.notes.forEach(function(nn){
         var y = yOf(nn);
         msegs.forEach(function(sg){
@@ -890,7 +894,7 @@ function drawRoll(p, now){
       var g = cx.createLinearGradient(0, TOP, 0, BOT);
       g.addColorStop(0, "rgba("+tint+",.13)"); g.addColorStop(1, "rgba("+tint+",.02)");
       cx.fillStyle = g; cx.fillRect(x0, TOP, w, BOT-TOP);
-      var segs = hitSegs(c, w, p.stepUnits);
+      var segs = hitSegs(c, w, p.stepUnits, at + c.off);
       c.notes.forEach(function(nn, ni){
         /* Per-note velocity is what makes humanise visible: with one figure per
            chord every notehead was the same height and Randomize moved nothing

@@ -250,6 +250,51 @@ gets wrong:
   threshold pass and DRAWS that; the action waits for the release in
   `onMidi`. Which is no bad thing -- the screen can say what the release will
   do while you are still holding.
+- **A TILE IS A FACT, NOT A REMAINDER.** The clip is the loop and the phrase
+  tiles inside it; the position was folded into the phrase (`pos_u %=
+  total_u`) and the two facts derived from it were not. `want_id` named
+  (pass, chord) without the tile, so on the second tile the chord already
+  armed read as "still that one" and a one-chord progression in a four-bar
+  clip sounded ONCE a lap; and `onset_pulse` was the first tile's, so when a
+  chord did re-arm its `elapsed` began a phrase late and every hit of its
+  figure fired in one block as a single stacked chord. Reachable the moment
+  Clip Bars is turned past the music -- the control whose job is to make the
+  phrase repeat. Both carry the tile now. `tests/test_stacks_tiling.sh`.
+- **THE READER MUST MOVE WHEN THE PLAYER MOVES.** When `len` became an
+  absolute eighth of a bar, `read_clip_chords` still counted it in eighths of
+  a STEP inferred from the first gap, laid every chord on that uniform grid,
+  and clamped at the old 16: an eight-bar clip of two-bar chords imported as
+  four bars of one-bar chords, mixed lengths landed on the wrong bars. It was
+  the one door into the buffer with no test, which is why it was the one that
+  drifted. It places DURATIONS now -- each slot runs to the next onset, only
+  the first can carry an offset -- and `SETS_DIR` is overridable so a test can
+  feed it a fixture. `tests/test_stacks_read_clip.sh`.
+- **A RHYTHM FIGURE BELONGS TO THE BAR.** Four consequences of forgetting it,
+  all in `arm_chord`: the grid was counted from the CHORD's onset, so two
+  half-bar chords under "son 3-2" played `3 | 3` and the "2" never sounded
+  (`phase` is passed in now: the sequencer's absolute onset, an audition's
+  place in the phrase); every hit got the figure's FIRST gap as its duration,
+  so in an uneven figure the note-off of hit N fell after hit N+1 re-struck
+  the same pitches and cut it -- tresillo's "2" lasted a 32nd (each hit lasts
+  its OWN gap, less its swing lean, and `emit_due` retriggers a pitch already
+  sounding rather than doubling it); swing moved odd sixteenths only, so under
+  "eighth" -- the figure swing is for -- it did nothing (it leans the finest
+  level the figure uses); and humanise was hashed per (chord, voice), so every
+  hit of a bar carried the identical deviation (the hit index is in the hash;
+  hit 0 hashes as before, so a saved seed keeps its first strike). `hold` and a
+  held pad are exempt from anchoring: one strike at the onset, whatever the
+  bar. `tests/test_stacks_figure_phase.sh`.
+- **A ROOT YOU NAMED IS THE ROOT THAT SOUNDS.** The library stores semitones
+  so a bVII can step outside the scale -- its own comment says a degree table
+  would render it "as its nearest diatonic neighbour, a different chord,
+  quietly" -- and `chord_notes` then snapped every root to the scale and did
+  exactly that: "bVII descent" in C Major played C G B F, and the staff
+  captioned the B as "A#" because the caption read the WRITTEN root. Two
+  answers to "what chord is this", and the legible one was wrong. A chord
+  carries `exact` now -- set by the libraries, the Root knob and a clip read,
+  cleared by the degree pads, a 14th blob field an old blob simply lacks --
+  and `sounding_root()` is the one function the sequencer builds from and the
+  caption names by. `tests/test_stacks_exact_root.sh`.
 - **A rule enforced at call sites is a rule that will be missed.** "Grow the
   clip to hold the music" was four copies of the same arithmetic, so `len`,
   `off`, `insert` and `remove` never got it and each silently pushed the
@@ -261,4 +306,5 @@ gets wrong:
 (the 38 shapes are declared in both C and `module.json`), the family runs being
 contiguous, the manifest being a tool's, and both realtime rules above.
 `test_stacks_tool_inject.sh` drives a lap through the tool entry. `test_stacks_clip_length.sh` walks
-every door that changes how much music there is.
+every door that changes how much music there is, and `test_stacks_read_clip.sh`
+the one door that reads music in.

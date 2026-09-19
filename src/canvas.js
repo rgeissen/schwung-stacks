@@ -1324,7 +1324,8 @@ function drawRoll(ctx, prog, top, bottom) {
             }
             if (!sc) continue;
             drawChordBlock(ctx, sc, ch, x0, w, top, bottom,
-                           isSel, k === prog.playing, prog.stepUnits || 8);
+                           isSel, k === prog.playing, prog.stepUnits || 8,
+                           (startU + ch.off) % (prog.stepUnits || 8));
             /* Named LAST, so nothing drawn for the block can land on top of
              * its own name -- and on every pass, because a repeat of the
              * progression is as much a chord you are looking at as the first. */
@@ -1407,7 +1408,7 @@ function drawChordName(ctx, ch, x, w, y, selected) {
     if (selected) ctx.fillRect(x, y + F3_H, Math.min(tw + 1, w), 1, 1);
 }
 
-function drawChordBlock(ctx, sc, ch, x, w, top, bottom, selected, playing, stepUnits) {
+function drawChordBlock(ctx, sc, ch, x, w, top, bottom, selected, playing, stepUnits, phaseU) {
     const vel = Number.isFinite(ch.vel) ? ch.vel : 100;
     const dense = ch.mute ? 0 : (vel >= 96 ? 3 : vel >= 64 ? 2 : 1);
 
@@ -1429,27 +1430,32 @@ function drawChordBlock(ctx, sc, ch, x, w, top, bottom, selected, playing, stepU
      * made every pattern look like every other one, and the only way to know
      * which was set was to remember turning the knob.
      *
-     * `stepUnits` is how many of the chord's own length units make one step,
-     * so a two-step chord shows the figure twice without the drawer knowing
+     * `stepUnits` is how many of the chord's own length units make one bar,
+     * so a two-bar chord shows the figure twice without the drawer knowing
      * anything about tempo.
+     *
+     * AND THE FIGURE IS ANCHORED TO THE BAR, as the scheduler anchors it:
+     * `phaseU` is where in the bar the chord starts, so a chord on beat three
+     * shows the second half of its clave, not the first half again. A chord
+     * too short to reach any hit of its figure draws no hits, because it
+     * plays none.
      */
     const mask = ch.mask || 1;
-    const stepW = (mask === 1) ? w
-                : w * (Math.min(ch.len, stepUnits) / Math.max(1, ch.len));
     const hits = [];
+    const ph = (mask === 1) ? 0 : ((phaseU || 0) % Math.max(1, stepUnits));
     /* "hold" is ONE hit for the whole chord and must not tile -- tiling it
      * drew a two-bar chord as two one-bar blocks, matching what the scheduler
      * was (wrongly) playing. Every other figure is bar-length and repeats. */
-    const tiles = (mask === 1) ? 1 : Math.ceil(ch.len / Math.max(1, stepUnits));
+    const tiles = (mask === 1) ? 1 : Math.ceil((ch.len + ph) / Math.max(1, stepUnits));
     for (let tile = 0; tile < tiles; tile++) {
         for (let b = 0; b < 16; b++) {
             if (!(mask & (1 << b))) continue;
-            const u = tile * stepUnits + (b / 16) * stepUnits;
+            const u = tile * stepUnits + (b / 16) * stepUnits - ph;
+            if (u < 0) continue;
             if (u >= ch.len) break;
             hits.push(Math.round((u / ch.len) * w));
         }
     }
-    if (!hits.length) hits.push(0);
 
     for (const n of ch.notes) {
         const y = sc.y(n);

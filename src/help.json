@@ -69,7 +69,7 @@
     },
     {
       "title": "Harmony",
-      "body": "Key, Octave Default and Scale live on Main and are LIVE: turning Key transposes what is already in the buffer, Octave Default moves it by octaves, Scale re-snaps it. Browsing a progression lands in that harmony and never overwrites it."
+      "body": "Key, Octave Default and Scale live on Main and are LIVE: turning Key transposes what is already in the buffer, Octave Default moves it by octaves, and Scale re-snaps every chord you wrote BY DEGREE. A root you named on the Root knob, browsed from a library or read from a clip is exact: the scale does not move it, so a bVII stays a bVII. The staff names the chord that sounds."
     },
     {
       "title": "Colour and Shape",

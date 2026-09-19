@@ -49,10 +49,13 @@ Schwung web manager (`http://move.local:7700`) — it lands under
     for t in tests/*.sh; do bash "$t"; done
 
 They compile the DSP natively and run it — the shape table against the
-contract, the clip length through every door that changes it, both `prog`
-parsers over one corpus, the chords' timing counted in MIDI clocks from Move's
-downbeat, a lap through the tool entry's inject path, the `ui.js` lifecycle
-over stubbed overtake globals, and the Tool tab's `state`/`rui_poll` contract.
+contract, the clip length through every door that changes it and Read Clip
+through the one door that reads music in, both `prog` parsers over one corpus,
+the chords' timing counted in MIDI clocks from Move's downbeat, a phrase
+tiling a longer clip, the rhythm figures anchored to the bar with swing and
+humanise reaching every hit, a named root sounding as named, a lap through
+the tool entry's inject path, the `ui.js` lifecycle over stubbed overtake
+globals, and the Tool tab's `state`/`rui_poll` contract.
 
 ## Requires
 
