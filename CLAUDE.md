@@ -32,10 +32,14 @@ host does not provide reads one field past the struct, passes its own
 `if (host->fn)` guard, and boot-loops the device.
 
 Anything this module needs that Schwung does not offer is a PULL REQUEST to
-Schwung, never a local patch. As an overtake it needs nothing today. One host
-finding is open: `button_passthrough` is honoured for Play (85) and not for
-Record (118) while a tool is on screen -- measured 2026-09-15, neither Move
-nor the module sees the press -- which is why a stamp is recorded after Back.
+Schwung, never a local patch. As an overtake it needs nothing today. The
+"host finding" that Record does not pass through while a tool is on screen
+(2026-09-15) was OURS: the manifest declared Record as 118, which is SAMPLE
+-- Record is 86 (`docs/API.md`; Schwung's `rec_arm.h` measured it on Move's
+own LED). The passthrough is a plain per-CC bitmap and treats 86 exactly as
+it treats Play. `[85, 86]` since 2026-10-03; `test_stacks_shapes.sh` refuses
+118. **Before calling a host behaviour a bug, check the number against
+Schwung's `docs/API.md`.**
 
 ## THE HOST CONTRACT, in the order it bit
 
@@ -43,8 +47,8 @@ nor the module sees the press -- which is why a stamp is recorded after Back.
   button is the tool's while it is up; the host clears every LED on the way in
   and on the way out; there is no `host_pad_block` to take and no CC to claim
   -- the chain-era reconciler, the claims and the pad-LED snapshot all went
-  with the chain. The two exceptions are declared: Play and Record pass
-  through to Move.
+  with the chain. The two exceptions are declared: Play (85) and Record (86)
+  pass through to Move.
 - **The DSP is the same state machine.** `plugin_api_v2` is an ADAPTER beside
   the MIDI FX entry points: `on_midi` is `stk_process_midi`, `render_block` is
   `stk_tick`, and what they return is injected into Move on cable 2
@@ -153,8 +157,8 @@ gets wrong:
   Move doesn't work", for a mechanism that was working the whole time), and a
   transport stop cancelled the arm while the browser went on saying ARMED.
   `status` publishes `armed` now, both surfaces read it, the surface blinks a
-  mark and toasts `BACK, REC ON MOVE` (it cannot press Record itself, and
-  the shim swallows the button while the tool is up). Arming also PARKS `run` so nothing sounds before the
+  mark and toasts `PRESS RECORD` (it cannot press Record itself; Record
+  passes through to Move with the tool on screen, and Back first works too). Arming also PARKS `run` so nothing sounds before the
   downbeat, and **every exit must put it back**: a cancel, and the take itself.
   Stopping after one lap REQUIRES `run = 0` (the sequencer follows it, and the
   alternative is stopping Move), but leaving it off is an action silently

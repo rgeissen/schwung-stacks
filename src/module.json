@@ -20,7 +20,7 @@
     "suspend_keeps_js": true,
     "button_passthrough": [
       85,
-      118
+      86
     ],
     "component_type": "tool",
     "chain_params": [

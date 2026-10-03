@@ -1088,9 +1088,9 @@ typedef struct {
     /*
      * PARKED, STACKS PLAYS ONLY FOR A TAKE IT ARMED.
      *
-     * Back parks the tool and the host keeps the DSP ticking, which the
-     * stamp needs: arm, Back, Record on Move, and the lap plays from the
-     * background. But Move plays an injected note on whichever track is
+     * Back parks the tool and the host keeps the DSP ticking, so a stamp
+     * survives it: arm, Back, Record on Move, and the lap plays from the
+     * background (Record also passes through with the tool on screen). But Move plays an injected note on whichever track is
      * SELECTED, not on a channel -- so a parked Stacks that goes on following
      * Move's transport, or looping its preview, lands on every track you
      * touch afterwards. Heard as "the other track plays the stamped notes
@@ -1759,12 +1759,12 @@ static int humanised_velocity(const stk_t *st, int chord, int voice) {
  * schwung_shim.c -- and the shim logs "MIDI inject: drained 2 pkts", so the
  * packets reach MIDI_IN.
  *
- * WHAT DEFEATS IT IS SCHWUNG, NOT MOVE. CC 118 is the Sample/Record button,
- * and the shim CLAIMS it before Move sees it: the injected press opened the
- * Quantized Sampler's fullscreen screen on the device instead of arming a
- * clip. A module cannot tell the shim "this press is mine, pass it through" --
- * there is no marker on an injected packet -- so any fix lives in the shim,
- * not here.
+ * WHAT DEFEATED IT WAS THE CC NUMBER. 118 is SAMPLE, not Record -- Record is
+ * 86 (docs/API.md; Schwung's rec_arm.h measured it on Move's own LED,
+ * 2026-09-12) -- and the shim uses 118 for its sampler gestures, which is why
+ * the injected press opened the Quantized Sampler's fullscreen screen. An
+ * injected CC 86 has NOT been tried; it is the experiment to run before
+ * concluding that a module cannot start Move's recorder.
  *
  * Until then the lap is ARMED and Move's transport starts it (see the clock
  * handler). That costs one button press on the hardware and works.

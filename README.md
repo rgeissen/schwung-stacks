@@ -18,7 +18,7 @@ the same playhead and the same transport.
 * **Sixteen pattern slots**, and you are always in one — tap a slot to switch,
   and everything you write belongs to it. Buffers, not clips: nothing touches
   the set, and each pattern carries its own clip length.
-* **Stamp to a clip** by arming one lap: press Back, then Record on Move, and
+* **Stamp to a clip** by arming one lap: press Record on Move, and
   Move records what you just heard, on its own downbeat. Stacks keeps playing
   while parked; reopen it from the Tools menu to carry on where you were.
 * **It plays on the track you have selected on Move** — Move puts an incoming
@@ -60,6 +60,5 @@ globals, and the Tool tab's `state`/`rui_poll` contract.
 ## Requires
 
 Schwung on the device with overtake tools and the Tool tab (1.4 or later).
-Nothing is patched in the host. One known gap: the Record button does not pass
-through to Move while a tool is on screen, which is why a stamp is armed here
-and recorded after Back — see `docs/plans/2026-09-15-overtake-port-design.md`.
+Nothing is patched in the host. On 1.6 or later, Read Track follows the track
+you select on Move; before that it is a knob you set yourself.

@@ -2054,8 +2054,8 @@ function paintStatus(){
   if (armedNow()){
     el.hidden = false;
     el.className = "stat working";
-    /* It cannot press Move's Record itself -- the shim claims CC 118 -- so the
-       wording names the thing the user has to do, in the order they do it. */
+    /* It cannot press Move's Record itself, so the wording names the thing
+       the user has to do, and where. */
     el.textContent = "ARMED \u00B7 REC ON MOVE";
     return;
   }

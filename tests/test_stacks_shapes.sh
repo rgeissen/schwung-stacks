@@ -138,8 +138,13 @@ if j.get('component_type') != 'tool' or not j.get('tool_config', {}).get('overta
 if not j['capabilities'].get('suspend_keeps_js'):
     bad.append("suspend_keeps_js missing -- an armed take would die on Back")
 bp = j['capabilities'].get('button_passthrough') or []
-if 85 not in bp or 118 not in bp:
-    bad.append(f"button_passthrough must carry Play (85) and Record (118), has {bp}")
+if 85 not in bp or 86 not in bp:
+    bad.append(f"button_passthrough must carry Play (85) and Record (86), has {bp}")
+# 118 is SAMPLE (docs/API.md; the host's own rec_arm.h measured Record at 86).
+# Listing it as "Record" is how Record went missing for a fortnight -- and
+# passed through, it opens Move's sampler behind the tool.
+if 118 in bp:
+    bad.append("button_passthrough carries 118, which is Sample, not Record")
 for stale in ('canvas_script', 'claims_ccs', 'claims_edit_ccs'):
     if stale in j['capabilities']:
         bad.append(f"chain-era capability {stale} is back")

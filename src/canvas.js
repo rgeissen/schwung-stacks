@@ -2062,14 +2062,13 @@ globalThis.canvas_overlay = {
                 ctx.setParam(key, "on");
                 if (key === "stamp") {
                     S.status = "armed";
-                    /* It cannot press Move's Record itself, and while this
-                     * overtake is on screen the shim swallows the Record
-                     * button even though it is declared in button_passthrough
-                     * (measured 2026-09-15). So the toast names the flow that
-                     * works: park with Back, then Record on Move -- the DSP
-                     * keeps ticking while parked and plays its lap on Move's
-                     * Start. */
-                    say(ctx, "ARMED: BACK, REC ON MOVE");
+                    /* It cannot press Move's Record itself, so the toast names
+                     * the press. Record (CC 86) is in button_passthrough and
+                     * reaches Move with the tool on screen; Back first works
+                     * too -- the DSP keeps ticking while parked and plays its
+                     * lap on Move's Start. (It was declared as 118 -- Sample --
+                     * until 2026-10-03, which is why Back used to be needed.) */
+                    say(ctx, "ARMED: PRESS RECORD");
                 }
                 refresh(ctx);
                 refreshBank(ctx);
