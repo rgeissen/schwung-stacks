@@ -23,8 +23,17 @@ the same playhead and the same transport.
   while parked; reopen it from the Tools menu to carry on where you were.
 * **It plays on the track you have selected on Move** — Move puts an incoming
   note on the selected track whatever channel it carries — and *Read Clip*
-  imports from the track *Read Track* names (a knob only because the host
-  cannot yet tell a tool which track is selected).
+  imports from the track *Read Track* names, which follows the track you
+  select on Move (Schwung 1.6 or later) and can still be turned by hand.
+* **MAIN sets it up, CLIP is what you turn while it plays.** *Clip Transpose*
+  (±12 semitones) and *Clip Octave* shift what sounds — and what Stamp records —
+  without rewriting anything: Key, Scale and the degree pads stay as written,
+  and 0 is exactly where you were. *Key* is the other kind: it rewrites the
+  progression into the new key. Per chord, *Transpose* (VOICE) and *Chord Oct*
+  (CHORD) do the same for one chord.
+* **The control matrix** — every bank, knob and gesture — is
+  `docs/stacks-matrix.html`, generated from the manifest by
+  `tools/gen_matrix.py`.
 * **It remembers.** The progression, all sixteen patterns and every setting are
   saved to `/data/UserData/schwung/stacks/state.json` a moment after each edit
   and again on exit, and are there when you open it next — across reboots and
@@ -53,9 +62,13 @@ contract, the clip length through every door that changes it and Read Clip
 through the one door that reads music in, both `prog` parsers over one corpus,
 the chords' timing counted in MIDI clocks from Move's downbeat, a phrase
 tiling a longer clip, the rhythm figures anchored to the bar with swing and
-humanise reaching every hit, a named root sounding as named, a lap through
-the tool entry's inject path, the `ui.js` lifecycle over stubbed overtake
-globals, and the Tool tab's `state`/`rui_poll` contract.
+humanise reaching every hit, a named root sounding as named, every transpose
+control moving what it says on the picture and on the injected notes, Read
+Track following Move's selection (over a faked host export), a lap through the
+tool entry's inject path, the `ui.js` lifecycle over stubbed overtake globals,
+the Tool tab's `state`/`rui_poll` contract, the vendored host headers pinned
+byte-for-byte to a Schwung release, and every device control present on the
+browser panel.
 
 ## Requires
 

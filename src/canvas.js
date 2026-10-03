@@ -260,33 +260,33 @@ function drawGrid(ctx, sc, prog, x0, x1, top, bottom) {
 /* ===================================================================== *
  * THE TAKEOVER
  *
- * `grid` is a plain type:"canvas" param, so clicking it opens VIEWS.CANVAS --
- * a real full-screen view: the host clears the screen and `draw` owns all
- * 128x64, and dispatchCanvasMidi hands this overlay RAW MIDI, so the jog, the
- * jog click and the eight encoders are ours. Menu and Back exit.
+ * An OVERTAKE TOOL owns the whole surface: `draw` owns all 128x64, and ui.js
+ * hands this overlay RAW MIDI, so the jog, the jog click, the eight encoders,
+ * the pads and every button are ours -- except Play (85) and Record (86),
+ * which pass through to Move, and Back, which the host takes to PARK the tool
+ * (Shift+Back exits). This file was written as a chain canvas page and kept
+ * its shape through the port because it derives everything from `ctx`; ui.js
+ * is that ctx now (see its header).
  *
- * IT CANNOT BE THE as_page PAGE, and that is the whole reason this exists
- * separately. An as_page page is a knob page carrying a drawer, so the JOG
- * PAGES there -- it belongs to the page rotation and can never be a chord
- * cursor. The jog is only ours inside VIEWS.CANVAS.
- *
- * READS: `draw` and `tick` are handed a context with getParam and setParam
- * REMOVED (DRAW_PATH_HOOKS), which enforces the no-reads-on-the-draw-path rule
- * by construction. So the whole progression is pulled in `onOpen` and again
- * after each edit in `onMidi` -- both events, not frames -- and `draw` renders
- * from that cache. One read gets everything, because `prog` carries it all.
+ * READS: `draw` and `tick` read nothing. That is a rule this file keeps, not
+ * one the ctx enforces -- ui.js hands every hook the same ctx, getParam
+ * included. The whole progression is pulled in `onOpen`, after each edit
+ * in `onMidi`, and on the 250ms `onPoll` -- events, not frames -- and `draw`
+ * renders from that cache. One read gets everything, because `prog` carries
+ * it all.
  * ===================================================================== */
 
 const KNOB_CC_FIRST = 71;          /* CC 71..78 are the eight encoders */
 const JOG_TURN_CC = 14;
 /*
- * MUTE, NOT SHIFT, is the bank modifier -- and that is forced, not preferred.
+ * MUTE IS A MODIFIER TOO, and that is history, not preference.
  *
- * The shim only forwards a fixed set of CCs to the UI (14 jog, 3 click, 51
- * back, 40-43 tracks, 71-78 knobs, 88 mute, plus whatever the module has
- * CLAIMED). CC 49 is NOT among them outside overtake mode, so Shift never
- * arrives here at all and a Shift+jog gesture could never fire -- it looked
- * implemented and was unreachable.
+ * As a chain component the shim forwarded only a fixed set of CCs to the UI,
+ * and CC 49 was not among them, so Shift never arrived and Mute became the
+ * modifier for the jog, Copy and Undo. As an overtake Shift does arrive (CC
+ * 49, recorded from the wire -- see shiftHeld()), and Mute stays: a hand that
+ * learned it keeps it. NOTE `S.shift` below is the MUTE flag, named for the
+ * role it plays; the real Shift is `S.shiftCC`.
  *
  * Mute is forwarded, and it is already this surface's modifier idiom:
  * Mute+JogClick bypasses a module, Mute+Track mutes a slot. Mute+Jog reads as
@@ -295,14 +295,15 @@ const JOG_TURN_CC = 14;
 const MUTE_CC = 88;
 const JOG_CLICK_CC = 3;
 /*
- * COPY and DELETE: Copy duplicates the selected chord, Delete removes it.
- * Those buttons already mean exactly that everywhere else on Move, so they
- * need no explaining. As an overtake every button is ours, the jog click
- * included -- there is no host underneath to steal CC 3 for a "return".
+ * COPY, DELETE and UNDO mean what they mean everywhere else on Move: Copy
+ * duplicates the progression (hold for halftime, Mute+Copy for double-time),
+ * Delete removes the selected chord, Undo steps back (Mute+Undo redoes). As
+ * an overtake every button is ours, the jog click included -- there is no
+ * host underneath to steal CC 3 for a "return".
  */
 const COPY_CC = 60;    /* duplicates the whole progression */
 const DELETE_CC = 119;
-const UNDO_CC = 56;    /* Undo, and Shift+Undo for redo */
+const UNDO_CC = 56;    /* Undo, and Mute+Undo for redo */
 
 /*
  * The write-access parameters -- things you DO. They have no range to walk, so
@@ -1194,9 +1195,9 @@ function drawPlayhead(ctx, prog, top, bottom, nowMs) {
  * "am I hearing the module or the clip" becomes a real question with no way to
  * answer it by ear. A filled triangle means Stacks is generating.
  *
- * IT UPDATES ON INTERACTION, NOT LIVE, and that is a hard limit rather than a
- * shortcut: the host strips getParam from `draw` AND from `tick` (both are
- * DRAW_PATH_HOOKS), so nothing here can read a value per frame.
+ * IT UPDATES ON INTERACTION AND ON THE POLL, NOT PER FRAME: `draw` and
+ * `tick` read nothing, so it changes when an edit or the 250ms `onPoll`
+ * brings a new `prog`.
  */
 function drawRunMark(ctx, prog, W, y) {
     if (!prog.running) return;

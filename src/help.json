@@ -61,7 +61,7 @@
     },
     {
       "title": "Buttons",
-      "body": "Copy duplicates the progression. HOLD Copy for halftime -- every chord twice as long. Mute + Copy for double-time, the exact inverse.\n\nUndo steps back and captures every edit, not just the big ones; Mute + Undo redoes. Delete removes the selected chord.\n\nMute + jog click mutes a chord. Shift + jog click inserts a copy of it. Shift or Mute + jog turn changes bank. Back leaves the grid."
+      "body": "Copy duplicates the progression. HOLD Copy for halftime -- every chord twice as long. Mute + Copy for double-time, the exact inverse.\n\nUndo steps back and captures every edit, not just the big ones; Mute + Undo redoes. Delete removes the selected chord.\n\nMute + jog click mutes a chord. Shift + jog click inserts a copy of it. Shift or Mute + jog turn changes bank. Back parks Stacks -- it keeps playing an armed take -- and the Tools menu brings it back; Shift + Back exits."
     },
     {
       "title": "Main, Rate and Bars",
@@ -221,9 +221,12 @@
       "title": "Read Clip",
       "lines": [
         "Reads the clip",
-        "playing on this",
-        "slot's track, or",
-        "the first clip if",
+        "playing on the",
+        "track Read Track",
+        "names -- it follows",
+        "the track you select",
+        "on Move -- or the",
+        "first clip if",
         "stopped.",
         "",
         "Notes struck",
@@ -239,9 +242,11 @@
         " append   add to",
         "  what you have",
         "",
-        "Start Fresh gives",
-        "back the default",
-        "I-V-vi-IV."
+        "A clip you just",
+        "recorded may not",
+        "read yet: Move",
+        "saves its set a",
+        "few seconds later."
       ]
     },
     {

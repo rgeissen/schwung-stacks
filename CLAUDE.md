@@ -323,7 +323,11 @@ gets wrong:
 
 `tests/test_stacks_shapes.sh` pins the shape table against the contract
 (the 38 shapes are declared in both C and `module.json`), the family runs being
-contiguous, the manifest being a tool's, and both realtime rules above.
+contiguous, the manifest being a tool's (passing Play 85 and Record 86, and
+refusing 118, which is Sample), every device bank mirrored on the browser
+panel, and both realtime rules above.
 `test_stacks_tool_inject.sh` drives a lap through the tool entry. `test_stacks_clip_length.sh` walks
 every door that changes how much music there is, and `test_stacks_read_clip.sh`
-the one door that reads music in.
+the one door that reads music in. `test_stacks_follow_track.sh` fakes the host's
+`move_info` export, and `test_host_abi_pinned.sh` checks the three vendored
+headers byte-for-byte against the pinned Schwung release.

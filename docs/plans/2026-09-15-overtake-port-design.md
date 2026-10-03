@@ -1,5 +1,13 @@
 # Stacks as an overtake tool — design
 
+> **Correction, 2026-10-03.** Below, Record is CC 118 and the Phase 0 result
+> reads as "the shim swallows Record while a tool is up". Both are wrong:
+> **118 is Sample; Record is CC 86** (Schwung's `docs/API.md`, and its
+> `rec_arm.h`, measured on Move's own LED). Record never passed through because
+> it was never declared, and the trace searched for `cc 118`. The manifest is
+> `[85, 86]` now and Record works with the tool on screen. The rest of this
+> document stands as the record of the port; CLAUDE.md is the living rules.
+
 ## The decision
 
 On 2026-09-13, in the Schwung Discord, Charles answered the ownership brief
