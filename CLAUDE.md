@@ -50,8 +50,11 @@ nor the module sees the press -- which is why a stamp is recorded after Back.
   `stk_tick`, and what they return is injected into Move on cable 2
   (`host->midi_inject_to_move`), channel 1 always -- Move plays an injected
   note on the SELECTED track and ignores the channel (measured), so nothing
-  is chosen; `Read Track` exists only because `Read Clip` needs a Song.abl
-  track index and the host does not yet expose the selection. Both init symbols
+  is chosen; `Read Track` is the Song.abl track index `Read Clip` reads, and it
+  FOLLOWS the selection Schwung 1.6 publishes (`move_info.h`, polled by the
+  worker -- the first read is a dlsym, never on the callback -- applied by
+  `tick` on a CHANGE so a knob turn holds). On an older host the knob is the
+  only answer. `tests/test_stacks_follow_track.sh`. Both init symbols
   are exported, so every DSP test drives the same code through the MIDI FX
   surface. Cable-0 notes tagged INTERNAL are pad IDENTIFIERS (68 is G#, chord
   9 by pitch class) and are dropped before the selector; Move's echo of our

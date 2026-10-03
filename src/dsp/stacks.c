@@ -49,6 +49,7 @@
 
 #include "host/midi_fx_api_v1.h"
 #include "host/plugin_api_v1.h"
+#include "host/move_info.h"     /* Move's selected track; Schwung >= 1.6.0 */
 
 #define STK_STATE_MAX      16384   /* get_param("state") is ~1.5KB today; the map grows with params */
 #define STK_STATE_DIR      "/data/UserData/schwung/stacks"
@@ -1112,8 +1113,9 @@ typedef struct {
     int              staging_applied;
     stk_prog_t       staging;       /* written by worker only, before the store */
     atomic_int       status;        /* 0 idle, 1 working, 2 ok, 3 failed */
-    int              recv_ch;       /* cached slot receive channel, for stamping */
     int              read_track;    /* the Move track (1-4) whose clip Read Clip imports */
+    atomic_int       move_track;    /* Move's selected track 1-4, 0 unknown; worker-stored */
+    int              move_track_seen;  /* the last one tick applied to read_track */
     /*
      * THE TOOL TAB'S LIVE SYNC (docs/MODULES.md "Remote UI for overtake
      * tools"). `rev` bumps on every snapshot-visible change -- a write, a
@@ -2099,13 +2101,30 @@ static void *stk_worker(void *arg) {
             }
         }
 
+        /*
+         * WHICH TRACK MOVE HAS SELECTED, asked HERE and not in create or
+         * tick: the first move_info_read() resolves the host's export with
+         * dlsym (the loader's lock) or, on a host without it, tries
+         * shm_open -- neither belongs on the SPI callback. Published as a
+         * plain 1-4 for tick to apply; 0 is "unknown" (an older Schwung, a
+         * set loading), which leaves Read Track to the knob.
+         */
+        {
+            move_info_t mi;
+            int t = 0;
+            if (move_info_read(&mi) && mi.valid
+                && mi.selected_track >= 0 && mi.selected_track < 4)
+                t = mi.selected_track + 1;
+            atomic_store_explicit(&st->move_track, t, memory_order_relaxed);
+        }
+
         int r = atomic_load(&st->req_read);
         if (r != last_read) {
             last_read = r;
             atomic_store(&st->status, 1);
             stk_prog_t got;
             memset(&got, 0, sizeof(got));
-            int n = read_clip_chords(st->recv_ch - 1, &got);
+            int n = read_clip_chords(st->read_track - 1, &got);
             if (n < 0) {
                 /* A read that did not complete is NOT "the clip is empty". */
                 atomic_store(&st->status, 3);
@@ -2462,13 +2481,13 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     st->held_mask = 0;
     st->pat_cur = 0;   /* slot 1 is active, and empty */
     st->cur_step = -1;
-    st->recv_ch = 1;
     st->read_track = 1;
     for (int i = 0; i < STK_MAX_VOICES; i++) st->voice[i].note = -1;
     atomic_init(&st->quit, 0);
     atomic_init(&st->req_read, 0);
     atomic_init(&st->staging_seq, 0);
     atomic_init(&st->status, 0);
+    atomic_init(&st->move_track, 0);
     atomic_init(&st->rev, 0);
     atomic_init(&st->snap_req, 0);
     atomic_init(&st->snap_seq, 0);
@@ -2730,6 +2749,19 @@ static int stk_tick(void *instance, int frames, int sample_rate,
      * against its release-store, so `staging` is fully written before we can
      * observe the sequence number that publishes it. */
     st->blocks++;
+    /* Read Track follows Move's selection -- on a CHANGE only, so the knob
+     * is still yours until the selection moves (see "read_track"). A write
+     * like any other, so the rev says so and both surfaces show it. */
+    {
+        int mt = atomic_load_explicit(&st->move_track, memory_order_relaxed);
+        if (mt != st->move_track_seen) {
+            st->move_track_seen = mt;
+            if (mt >= 1 && mt != st->read_track) {
+                st->read_track = mt;
+                atomic_fetch_add_explicit(&st->rev, 1, memory_order_relaxed);
+            }
+        }
+    }
     {
         int sn = atomic_load(&st->status);
         if (sn != st->status_rev_seen) {
@@ -3727,12 +3759,12 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
     } else if (strcmp(key, "read_track") == 0) {
         /* The Song.abl track Read Clip imports from. NOT where the output
          * goes: Move plays an injected note on whichever track is SELECTED
-         * and ignores the channel (measured 2026-09-17), and the host does
-         * not yet tell a module which track that is -- so Read has to be
-         * told. When clip_selected_track() reaches the module API this knob
-         * goes. */
+         * and ignores the channel (measured 2026-09-17). It FOLLOWS that
+         * selection where the host publishes it (move_info.h, see the
+         * worker) -- on a CHANGE, so a turn of this knob still holds until
+         * you pick another track on Move. On an older host it is the only
+         * answer, as before. */
         st->read_track = clampi(atoi(val), 1, 4);
-        st->recv_ch = st->read_track;
     } else if (strcmp(key, "preview") == 0) {
         static const char *const P[] = { "off", "chord", "loop" };
         int i = opt_index(val, P, 3);

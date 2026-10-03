@@ -2,8 +2,9 @@
 #
 # THE VENDORED HOST HEADERS MUST BE THE HOST'S, UNCHANGED.
 #
-# This module compiles against `host_api_v1_t` and `midi_fx_api_v1_t`, which
-# belong to Schwung. A module repo has to carry a copy to build standalone --
+# This module compiles against `host_api_v1_t` and `midi_fx_api_v1_t`, and
+# reads `move_info_t` (move_info.h, a public header meant to be copied), all of
+# which belong to Schwung. A module repo has to carry a copy to build standalone --
 # and a carried copy is exactly how a device gets boot-looped.
 #
 # The story, from Schwung's own CLAUDE.md: breakbeat appended one callback to
@@ -30,7 +31,7 @@ REPO="$(cat "$ROOT/src/host/UPSTREAM_REPO" 2>/dev/null || echo)"
 
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 fail=0
-for h in midi_fx_api_v1.h plugin_api_v1.h; do
+for h in midi_fx_api_v1.h plugin_api_v1.h move_info.h; do
     url="https://raw.githubusercontent.com/$REPO/$REF/src/host/$h"
     if ! curl -fsS -m 20 "$url" -o "$TMP/$h" 2>/dev/null; then
         echo "SKIP: cannot reach $REPO at $REF (offline?) -- the ABI pin was NOT checked"
