@@ -1237,23 +1237,25 @@ function audition(){ set("play","on"); setTimeout(function(){ set("play","off");
  * ═════════════════════════════════════════════════════════════ */
 var BANKS = [
   { id:"main",  name:"MAIN",  scope:"prog",
-    keys:["scale","key","defoct","steps","rate","bars","grouping"] },
+    keys:["scale","key","defoct","steps","rate","bars","grouping","lanes"] },
   { id:"start", name:"START", scope:"prog",
     keys:["genre","progression","common","uncommon","colour"] },
   { id:"chord", name:"CHORD", scope:"chord",
-    keys:["degree","root","family","shape","inv","len","off","cvel"] },
+    keys:["degree","root","coct","family","shape","inv","len","off","cvel"] },
   { id:"voice", name:"VOICE", scope:"chord",
     keys:["ccolour","cstrum","cgate","cmute","rhythm","ctrans"] },
   { id:"feel",  name:"FEEL",  scope:"prog",
-    keys:["octave","velocity","gate","swing","hum_vel","roll_vel","hum_time","roll_time"] },
+    keys:["velocity","gate","swing","hum_vel","roll_vel","hum_time","roll_time"] },
   { id:"clip",  name:"CLIP",  scope:"prog",
     /* `preview` moved to the header transport button; `run` stays, it is a
        mode (follow Move's clock) rather than a transport. */
     /* There is no file stamp: it cannot win against Move, which holds the
        active set in memory and autosaves over it (measured at 142s). Stamp
        arms one lap for Move's own recorder. */
-    keys:["patterns","read","read_mode","read_track","stamp","clear","lanes","run",
-          "duplicate","stretch","compress","undo"] },
+    /* Clip Transpose and Clip Octave lead: they are what you reach for while
+       it plays, and MAIN is setup. Same pair, same order as the Move's bank. */
+    keys:["patterns","transpose","octave","read","read_mode","read_track","stamp",
+          "clear","run","duplicate","stretch","compress","undo"] },
 ];
 var bank = "chord";
 
@@ -1292,6 +1294,7 @@ var SPAN = { patterns:6,
   vel:2, gate:2, strum:2,
   /* CLIP: the two-option modes and the actions pair up, so the bank is read
      as rows of related things rather than one column of full-width cards. */
+  transpose:3, octave:3,
   read_mode:3, read_track:3, lanes:3, run:3,
   read:3, stamp:3, clear:3, duplicate:3, stretch:3, compress:3, undo:3
 };
@@ -2173,7 +2176,8 @@ if (R){
     cstrum:{name:"Strum",type:"int",min:0,max:100}, cgate:{name:"Chord Gate",type:"int",min:-50,max:50},
     cmute:{name:"Mute",options:["off","on"]}, rhythm:{name:"Rhythm",options:Object.keys(RHY)},
     ctrans:{name:"Transpose",type:"int",min:-12,max:12},
-    octave:{name:"Octave",type:"int",min:-2,max:2}, velocity:{name:"Velocity",type:"int",min:1,max:127},
+    octave:{name:"Clip Octave",type:"int",min:-2,max:2},
+    transpose:{name:"Clip Transpose",type:"int",min:-12,max:12}, velocity:{name:"Velocity",type:"int",min:1,max:127},
     gate:{name:"Gate",type:"int",min:5,max:100}, swing:{name:"Swing",type:"int",min:0,max:75},
     hum_vel:{name:"Human Vel",type:"int",min:0,max:100},
     hum_time:{name:"Human Time",type:"int",min:0,max:100},

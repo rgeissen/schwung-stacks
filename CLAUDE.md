@@ -302,6 +302,18 @@ gets wrong:
   cleared by the degree pads, a 14th blob field an old blob simply lacks --
   and `sounding_root()` is the one function the sequencer builds from and the
   caption names by. `tests/test_stacks_exact_root.sh`.
+- **A PERFORMANCE CONTROL MOVES WHAT SOUNDS, NOT WHAT IS WRITTEN.** Four
+  controls moved pitch and none was called a clip transpose -- Key rewrites
+  the progression, Octave sat on FEEL, the panel had lost Chord Oct -- so
+  "I am missing transpose" was true of the surface and false of the module.
+  CLIP now carries Clip Transpose (semitones) and Clip Octave, the things you
+  turn while it plays; MAIN is setup. Clip Transpose goes through
+  `played()`, which adds it to the chord's own Transpose AFTER the scale
+  snap (before it, the snap pulls a shifted degree chord back into key), and
+  the sequencer, the resolved notes and the caption all ask there. It rides
+  in the state map, not the blob, so an older blob restores it at 0.
+  `tests/test_stacks_transpose.sh`; `test_stacks_shapes.sh` now fails when a
+  device control is missing from the panel's bank.
 - **A rule enforced at call sites is a rule that will be missed.** "Grow the
   clip to hold the music" was four copies of the same arithmetic, so `len`,
   `off`, `insert` and `remove` never got it and each silently pushed the

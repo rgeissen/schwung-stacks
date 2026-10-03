@@ -701,11 +701,21 @@
       },
       {
         "key": "octave",
-        "name": "Octave",
+        "name": "Clip Octave",
         "short_name": "Oct",
         "type": "int",
         "min": -2,
         "max": 2,
+        "default": 0,
+        "step": 1
+      },
+      {
+        "key": "transpose",
+        "name": "Clip Transpose",
+        "short_name": "Trans",
+        "type": "int",
+        "min": -12,
+        "max": 12,
         "default": 0,
         "step": 1
       },
@@ -1201,6 +1211,9 @@
           },
           {
             "key": "grouping"
+          },
+          {
+            "key": "lanes"
           }
         ],
         "knobs": [
@@ -1211,7 +1224,8 @@
           "steps",
           "rate",
           "bars",
-          "grouping"
+          "grouping",
+          "lanes"
         ]
       },
       "chord": {
@@ -1288,7 +1302,7 @@
         "name": "Feel",
         "params": [
           {
-            "key": "octave"
+            "key": "preview"
           },
           {
             "key": "velocity"
@@ -1313,7 +1327,7 @@
           }
         ],
         "knobs": [
-          "octave",
+          "preview",
           "velocity",
           "gate",
           "swing",
@@ -1339,10 +1353,10 @@
             "key": "clear"
           },
           {
-            "key": "lanes"
+            "key": "transpose"
           },
           {
-            "key": "preview"
+            "key": "octave"
           },
           {
             "key": "run"
@@ -1356,8 +1370,8 @@
           "read_mode",
           "stamp",
           "clear",
-          "lanes",
-          "preview",
+          "transpose",
+          "octave",
           "run",
           "undo"
         ]

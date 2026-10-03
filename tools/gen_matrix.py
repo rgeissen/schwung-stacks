@@ -121,7 +121,8 @@ DESC = {
  "rhythm":    "35 figures &mdash; the grid, syncopation, clave, jazz comping, rock, house stabs, cinematic pulses. Anchored to the BAR and repeating across the chord; <em>hold</em> strikes once and is held.",
  "ctrans":    "Transposes this chord in semitones after its shape is built, so the shape survives and only the pitch moves.",
 
- "octave":    "Transposes the whole progression at once. The per-chord <em>Transpose</em> on VOICE rides on top of this.",
+ "octave":    "Moves everything that sounds by whole octaves, for performing. What you wrote is untouched, so turning back to 0 is exactly where you were.",
+ "transpose": "Moves everything that sounds by semitones, Stamp included. Key, Scale and the degree pads stay as written; the staff names the chords that sound.",
  "velocity":  "Base velocity that every chord is measured from. The per-chord <em>Chord Vel</em> is an offset against it.",
  "gate":      "Base proportion of a chord's length that actually sounds. The per-chord <em>Chord Gate</em> offsets this one.",
  "swing":     "Leans the off-beat at the finest level the figure uses: odd 16ths under a 16th figure, the <em>and</em>s under an eighth one. Anchored to the bar.",
@@ -130,9 +131,9 @@ DESC = {
  "hum_time":  "Spreads onsets per note and per hit. The spread is shifted so the earliest note still lands on the beat, never clamped.",
  "roll_time": "Re-rolls the timing spread and leaves velocity where it is, so the two can be dialled in separately.",
 
- "read":      "Reads the clip playing on the track <em>Read Track</em> names (in the browser panel) and names its chords, so you can edit something you already recorded.",
+ "read":      "Reads the clip playing on the track <em>Read Track</em> names, which follows the track you select on Move, and names its chords so you can edit what you recorded.",
  "read_mode": "Whether reading replaces the progression or appends to it, so one phrase can be built from several clips.",
- "stamp":     "Arms one lap for Move to record: press Back, then Record on Move, and it plays the progression once on Move's downbeat.",
+ "stamp":     "Arms one lap for Move to record: press Record on Move (with Stacks still on screen, or after Back), and it plays the progression once on Move's downbeat.",
  "clear":     "Empties the buffer to a single rest, in your Key and Octave Default &mdash; not to a demo progression.",
  "lanes":     "Which grid lines the staff draws: only the notes of the selected scale, or all seven letter names.",
  "preview":   "Whether editing a chord auditions it, and whether the progression keeps looping while the transport is stopped.",

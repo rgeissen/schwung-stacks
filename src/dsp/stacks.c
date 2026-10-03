@@ -334,57 +334,59 @@ static const char CHAIN_PARAMS_JSON[] =
     "\",\"name\":\"New Chord Len\",\"short_name\":\"Rte\",\"options_as_string\":true,\"type\""
     ":\"enum\",\"options\":[\"2 bar\",\"1 bar\",\"1/2\",\"1/4\"],\"default\":1},{\"key\":\"ru"
     "n\",\"name\":\"Run\",\"short_name\":\"Run\",\"options_as_string\":true,\"type\":\"enum\""
-    ",\"options\":[\"off\",\"on\"],\"default\":1},{\"key\":\"octave\",\"name\":\"Octave\",\"s"
-    "hort_name\":\"Oct\",\"type\":\"int\",\"min\":-2,\"max\":2,\"default\":0,\"step\":1},{\"k"
-    "ey\":\"velocity\",\"name\":\"Velocity\",\"short_name\":\"Vel\",\"type\":\"int\",\"min\":"
-    "1,\"max\":127,\"default\":100,\"step\":1},{\"key\":\"gate\",\"name\":\"Gate\",\"short_na"
-    "me\":\"Gate\",\"type\":\"int\",\"min\":5,\"max\":100,\"default\":90,\"step\":1},{\"key\""
-    ":\"hum_vel\",\"name\":\"Human Vel\",\"short_name\":\"HuVel\",\"type\":\"int\",\"min\":0,"
-    "\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_vel\",\"name\":\"Randomize Vel\","
-    "\"short_name\":\"RndVel\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"writ"
-    "e\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"hum_time\",\"name\":\"Human T"
-    "ime\",\"short_name\":\"HuTim\",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,\"st"
-    "ep\":1},{\"key\":\"roll_time\",\"name\":\"Randomize Time\",\"short_name\":\"RndTim\",\"o"
-    "ptions_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on"
-    "\"],\"default\":0},{\"key\":\"swing\",\"name\":\"Swing\",\"short_name\":\"Swng\",\"type"
-    "\":\"int\",\"min\":0,\"max\":75,\"default\":0,\"step\":1},{\"key\":\"lanes\",\"name\":\""
-    "Note Lanes\",\"short_name\":\"Lanes\",\"options_as_string\":true,\"type\":\"enum\",\"opt"
-    "ions\":[\"scale\",\"diatonic\"],\"default\":0},{\"key\":\"preview\",\"name\":\"Preview\""
-    ",\"short_name\":\"Prev\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off"
-    "\",\"chord\",\"loop\"],\"default\":0},{\"key\":\"read\",\"name\":\"Read Clip\",\"short_n"
-    "ame\":\"Read\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"]"
-    ",\"default\":0,\"access\":\"write\"},{\"key\":\"read_mode\",\"name\":\"Read Mode\",\"sho"
-    "rt_name\":\"RdMod\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"replace"
-    "\",\"append\"],\"default\":0},{\"key\":\"read_track\",\"name\":\"Read Track\",\"short_na"
-    "me\":\"RdT\",\"type\":\"int\",\"min\":1,\"max\":4,\"default\":1,\"step\":1},{\"key\":\"d"
-    "efoct\",\"name\":\"Octave Default\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\""
-    "max\":5,\"default\":3,\"step\":1},{\"key\":\"bars\",\"name\":\"Clip Bars\",\"short_name"
-    "\":\"Bars\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":4,\"step\":1},{\"key\":\"s"
-    "tamp\",\"name\":\"Stamp Clip\",\"short_name\":\"Stamp\",\"options_as_string\":true,\"typ"
-    "e\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":"
-    "\"clear\",\"name\":\"Clear\",\"short_name\":\"Clear\",\"options_as_string\":true,\"type"
-    "\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\""
-    "pat_store\",\"name\":\"Store Pattern\",\"short_name\":\"PSt\",\"type\":\"int\",\"min\":1"
-    ",\"max\":16,\"default\":1,\"step\":1},{\"key\":\"pat_recall\",\"name\":\"Recall Pattern"
-    "\",\"short_name\":\"PRc\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1"
-    "},{\"key\":\"pat_delete\",\"name\":\"Delete Pattern\",\"short_name\":\"PDl\",\"type\":\""
-    "int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"play\",\"name\":\"Play C"
-    "hord\",\"short_name\":\"Play\",\"options_as_string\":true,\"type\":\"enum\",\"access\":"
-    "\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"duplicate\",\"name\":\""
-    "Duplicate\",\"short_name\":\"Dup\",\"options_as_string\":true,\"type\":\"enum\",\"access"
-    "\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"stretch\",\"name\":"
-    "\"Double Length\",\"short_name\":\"Dbl\",\"options_as_string\":true,\"type\":\"enum\",\""
-    "access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"compress\",\"n"
-    "ame\":\"Half Length\",\"short_name\":\"Hlf\",\"options_as_string\":true,\"type\":\"enum"
-    "\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"undo\",\""
-    "name\":\"Undo\",\"short_name\":\"Und\",\"options_as_string\":true,\"type\":\"enum\",\"ac"
-    "cess\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"redo\",\"name\":"
-    "\"Redo\",\"short_name\":\"Red\",\"options_as_string\":true,\"type\":\"enum\",\"access\":"
-    "\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"insert\",\"name\":\"Ins"
-    "ert Chord\",\"short_name\":\"Ins\",\"options_as_string\":true,\"type\":\"enum\",\"access"
-    "\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"key\":\"remove\",\"name\":\""
-    "Delete Chord\",\"short_name\":\"Del\",\"options_as_string\":true,\"type\":\"enum\",\"acc"
-    "ess\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0}]";
+    ",\"options\":[\"off\",\"on\"],\"default\":1},{\"key\":\"octave\",\"name\":\"Clip Octave"
+    "\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":-2,\"max\":2,\"default\":0,\"step\":1"
+    "},{\"key\":\"transpose\",\"name\":\"Clip Transpose\",\"short_name\":\"Trans\",\"type\":"
+    "\"int\",\"min\":-12,\"max\":12,\"default\":0,\"step\":1},{\"key\":\"velocity\",\"name\":"
+    "\"Velocity\",\"short_name\":\"Vel\",\"type\":\"int\",\"min\":1,\"max\":127,\"default\":1"
+    "00,\"step\":1},{\"key\":\"gate\",\"name\":\"Gate\",\"short_name\":\"Gate\",\"type\":\"in"
+    "t\",\"min\":5,\"max\":100,\"default\":90,\"step\":1},{\"key\":\"hum_vel\",\"name\":\"Hum"
+    "an Vel\",\"short_name\":\"HuVel\",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,"
+    "\"step\":1},{\"key\":\"roll_vel\",\"name\":\"Randomize Vel\",\"short_name\":\"RndVel\","
+    "\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\","
+    "\"on\"],\"default\":0},{\"key\":\"hum_time\",\"name\":\"Human Time\",\"short_name\":\"Hu"
+    "Tim\",\"type\":\"int\",\"min\":0,\"max\":100,\"default\":0,\"step\":1},{\"key\":\"roll_t"
+    "ime\",\"name\":\"Randomize Time\",\"short_name\":\"RndTim\",\"options_as_string\":true,"
+    "\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off\",\"on\"],\"default\":0},{\"ke"
+    "y\":\"swing\",\"name\":\"Swing\",\"short_name\":\"Swng\",\"type\":\"int\",\"min\":0,\"ma"
+    "x\":75,\"default\":0,\"step\":1},{\"key\":\"lanes\",\"name\":\"Note Lanes\",\"short_name"
+    "\":\"Lanes\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"scale\",\"diato"
+    "nic\"],\"default\":0},{\"key\":\"preview\",\"name\":\"Preview\",\"short_name\":\"Prev\","
+    "\"options_as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"chord\",\"loop\"],\""
+    "default\":0},{\"key\":\"read\",\"name\":\"Read Clip\",\"short_name\":\"Read\",\"options_"
+    "as_string\":true,\"type\":\"enum\",\"options\":[\"off\",\"on\"],\"default\":0,\"access\""
+    ":\"write\"},{\"key\":\"read_mode\",\"name\":\"Read Mode\",\"short_name\":\"RdMod\",\"opt"
+    "ions_as_string\":true,\"type\":\"enum\",\"options\":[\"replace\",\"append\"],\"default\""
+    ":0},{\"key\":\"read_track\",\"name\":\"Read Track\",\"short_name\":\"RdT\",\"type\":\"in"
+    "t\",\"min\":1,\"max\":4,\"default\":1,\"step\":1},{\"key\":\"defoct\",\"name\":\"Octave "
+    "Default\",\"short_name\":\"Oct\",\"type\":\"int\",\"min\":1,\"max\":5,\"default\":3,\"st"
+    "ep\":1},{\"key\":\"bars\",\"name\":\"Clip Bars\",\"short_name\":\"Bars\",\"type\":\"int"
+    "\",\"min\":1,\"max\":16,\"default\":4,\"step\":1},{\"key\":\"stamp\",\"name\":\"Stamp Cl"
+    "ip\",\"short_name\":\"Stamp\",\"options_as_string\":true,\"type\":\"enum\",\"options\":["
+    "\"off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"clear\",\"name\":\"Clear"
+    "\",\"short_name\":\"Clear\",\"options_as_string\":true,\"type\":\"enum\",\"options\":[\""
+    "off\",\"on\"],\"default\":0,\"access\":\"write\"},{\"key\":\"pat_store\",\"name\":\"Stor"
+    "e Pattern\",\"short_name\":\"PSt\",\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,"
+    "\"step\":1},{\"key\":\"pat_recall\",\"name\":\"Recall Pattern\",\"short_name\":\"PRc\","
+    "\"type\":\"int\",\"min\":1,\"max\":16,\"default\":1,\"step\":1},{\"key\":\"pat_delete\","
+    "\"name\":\"Delete Pattern\",\"short_name\":\"PDl\",\"type\":\"int\",\"min\":1,\"max\":16"
+    ",\"default\":1,\"step\":1},{\"key\":\"play\",\"name\":\"Play Chord\",\"short_name\":\"Pl"
+    "ay\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"of"
+    "f\",\"on\"],\"default\":0},{\"key\":\"duplicate\",\"name\":\"Duplicate\",\"short_name\":"
+    "\"Dup\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":["
+    "\"off\",\"on\"],\"default\":0},{\"key\":\"stretch\",\"name\":\"Double Length\",\"short_n"
+    "ame\":\"Dbl\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"option"
+    "s\":[\"off\",\"on\"],\"default\":0},{\"key\":\"compress\",\"name\":\"Half Length\",\"sho"
+    "rt_name\":\"Hlf\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"op"
+    "tions\":[\"off\",\"on\"],\"default\":0},{\"key\":\"undo\",\"name\":\"Undo\",\"short_name"
+    "\":\"Und\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\""
+    ":[\"off\",\"on\"],\"default\":0},{\"key\":\"redo\",\"name\":\"Redo\",\"short_name\":\"Re"
+    "d\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":[\"off"
+    "\",\"on\"],\"default\":0},{\"key\":\"insert\",\"name\":\"Insert Chord\",\"short_name\":"
+    "\"Ins\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options\":["
+    "\"off\",\"on\"],\"default\":0},{\"key\":\"remove\",\"name\":\"Delete Chord\",\"short_nam"
+    "e\":\"Del\",\"options_as_string\":true,\"type\":\"enum\",\"access\":\"write\",\"options"
+    "\":[\"off\",\"on\"],\"default\":0}]";
 /* ---- END GENERATED chain_params ---- */
 
 /* ======================================================================
@@ -931,6 +933,7 @@ typedef struct {
     int run;            /* free-run with the transport */
     int preview;        /* 0 off, 1 audition selected chord, 2 loop */
     int octave;         /* -2..+2 */
+    int transpose;      /* -12..+12 semitones on everything that sounds; see played() */
     int velocity;
     int gate;           /* percent of `len` actually sounded */
     int lanes;          /* 0 scale-aware note lanes, 1 diatonic */
@@ -2191,6 +2194,21 @@ static int swing_lean(const stk_t *st, int swing16, int sub, int pos) {
 }
 
 /*
+ * THE CHORD AS IT IS PLAYED: the written chord with Clip Transpose added to
+ * its own Transpose. A performance control, so it shifts what SOUNDS and
+ * leaves what is WRITTEN alone -- Key, Scale, the roots, the degree pads --
+ * and it lands where the chord's Transpose does, AFTER the scale snap, or the
+ * snap would pull a shifted root back into the old key. The sequencer, the
+ * staff's resolved notes and its caption all ask here, so none of them can
+ * name or draw a chord the synth did not play.
+ */
+static stk_chord_t played(const stk_t *st, const stk_chord_t *c) {
+    stk_chord_t t = *c;
+    t.trans += st->transpose;
+    return t;
+}
+
+/*
  * Arm a step: work out every note's pitch, velocity and onset ONCE, then let
  * tick emit each as its moment arrives. Nothing is sounded here.
  *
@@ -2211,7 +2229,8 @@ static void arm_chord(stk_t *st, int step, int hold, int phase) {
     if (c->mute && !hold) return;
 
     int tones[STK_MAX_TONES];
-    int cnt = chord_notes_g(c, st->octave, st->prog.scale, st->prog.key,
+    const stk_chord_t pl = played(st, c);
+    int cnt = chord_notes_g(&pl, st->octave, st->prog.scale, st->prog.key,
                             c->colour, st->grouping,
                             st->last_n ? st->last_tones : NULL, st->last_n,
                             tones, STK_MAX_TONES);
@@ -2457,6 +2476,7 @@ static void *stk_create(const char *module_dir, const char *config_json) {
     st->run = 1;
     st->preview = 0;   /* the click auditions; edits do so only on request */
     st->octave = 0;
+    st->transpose = 0;
     st->velocity = 100;
     st->gate = 90;
     st->lanes = 0;
@@ -3801,6 +3821,8 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
         }
     } else if (strcmp(key, "octave") == 0) {
         st->octave = clampi(atoi(val), -2, 2);
+    } else if (strcmp(key, "transpose") == 0) {
+        st->transpose = clampi(atoi(val), -12, 12);
     } else if (strcmp(key, "velocity") == 0) {
         st->velocity = clampi(atoi(val), 1, 127);
     } else if (strcmp(key, "gate") == 0) {
@@ -4156,6 +4178,10 @@ static void stk_set_param_inner(void *instance, const char *key, const char *val
          * field); a set written before it existed simply lacks it. */
         const char *rt = strstr(val, "\"read_track\":\"");
         if (rt) st->read_track = clampi(atoi(rt + 14), 1, 4);
+        /* So may transpose, for the same reason: it rides in the map, and a
+         * blob written before it existed restores at 0. */
+        const char *tp = strstr(val, "\"transpose\":\"");
+        st->transpose = tp ? clampi(atoi(tp + 13), -12, 12) : 0;
         p += 5;
         int key_, scale_, rate_, bars_, defoct_, oct_, vel_, gate_, swing_;
         int hv_, ht_, lanes_, prev_, rm_, sm_, run_, preset_, sel_, count_;
@@ -4418,7 +4444,8 @@ static int fmt_prog(const stk_t *st, char *buf, int buf_len) {
          * exactly when the scale or Transpose moved the chord, which is what
          * the caption is there to tell you. */
         int pc = ((c->root % 12) + 12) % 12;
-        int spc = ((sounding_root(c, 0, st->prog.scale, st->prog.key) % 12) + 12) % 12;
+        const stk_chord_t pl = played(st, c);
+        int spc = ((sounding_root(&pl, 0, st->prog.scale, st->prog.key) % 12) + 12) % 12;
         int is_rest = (c->shape == SHAPE_REST);
         /*
          * v3 adds the ROOT NAME beside the chord name. The takeover's top row
@@ -4467,7 +4494,7 @@ static int fmt_prog(const stk_t *st, char *buf, int buf_len) {
                        eff_vel, c->mute ? 1 : 0,
                        (unsigned)RHYTHMS[clampi(c->rhythm,0,NUM_RHYTHMS-1)].mask);
         int tones[STK_MAX_TONES];
-        int n = chord_notes_g(c, st->octave, st->prog.scale, st->prog.key,
+        int n = chord_notes_g(&pl, st->octave, st->prog.scale, st->prog.key,
                               c->colour, st->grouping,
                               pv_n ? pv_prev : NULL, pv_n, tones, STK_MAX_TONES);
         pv_n = n > STK_MAX_TONES ? STK_MAX_TONES : n;
@@ -4620,6 +4647,7 @@ static int stk_get_param(void *instance, const char *key, char *buf, int buf_len
         return snprintf(buf, buf_len, "%s", P[clampi(st->preview, 0, 2)]);
     }
     if (strcmp(key, "octave") == 0)   return snprintf(buf, buf_len, "%d", st->octave);
+    if (strcmp(key, "transpose") == 0) return snprintf(buf, buf_len, "%d", st->transpose);
     if (strcmp(key, "velocity") == 0) return snprintf(buf, buf_len, "%d", st->velocity);
     if (strcmp(key, "gate") == 0)     return snprintf(buf, buf_len, "%d", st->gate);
     if (strcmp(key, "lanes") == 0)

@@ -134,7 +134,7 @@ SHORT = {
  "off":"OFF","cvel":"VEL","ccolour":"COL","cstrum":"STR","cgate":"GAT",
  "cmute":"MUT","rhythm":"RHY","ctrans":"TRN","scale":"SCL","key":"KEY",
  "defoct":"DOC","grouping":"GRP","steps":"CHD","rate":"RTE","bars":"BAR","run":"RUN",
- "octave":"OCT","velocity":"VEL","gate":"GAT","swing":"SWG","hum_vel":"HVL",
+ "octave":"OCT","transpose":"TRP","velocity":"VEL","gate":"GAT","swing":"SWG","hum_vel":"HVL",
  "roll_vel":"RVL","hum_time":"HTM","roll_time":"RTM","read":"RD",
  "read_mode":"RDM","stamp":"ST","stamp_mode":"STM","clear":"CLR",
  "lanes":"LAN","preview":"PRV","genre":"GEN","progression":"PRG","colour":"COL",

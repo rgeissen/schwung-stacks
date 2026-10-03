@@ -250,6 +250,31 @@ sys.exit(1 if bad else 0)
 PYEOF
 note "the five banks mirror the five levels, key for key"
 
+# 9e'. AND THE PANEL CARRIES EVERY ONE OF THEM, IN THE SAME BANK. The panel's
+#      bank list is hand-kept -- it adds controls the Move has elsewhere
+#      (Degree, Patterns, Read Track, Duplicate...) -- so it may hold MORE, but
+#      a device control missing from it is a control the browser cannot reach.
+#      Chord Oct was, until 2026-10-03, and "I am missing the octave" was the
+#      report. Exempt: `sel` (the chord strip) and `preview` (the panel's
+#      header transport button).
+python3 - <<'PYEOF' || fail=1
+import json, re, sys
+lv = json.load(open('src/module.json'))['ui_hierarchy']['levels']
+src = open('src/web_ui.html').read()
+blk = src[src.index('var BANKS = ['):src.index('];', src.index('var BANKS = ['))]
+panel = {m.group(1): re.findall(r'"([a-z_]+)"', m.group(2))
+         for m in re.finditer(r'id:"(\w+)".*?keys:\[(.*?)\]', blk, re.S)}
+bad = []
+for level, pid in [("root","main"),("start","start"),("chord","chord"),("voice","voice"),("feel","feel"),("clip","clip")]:
+    for k in lv[level]['knobs']:
+        if k in ("sel", "preview"): continue
+        if k not in panel.get(pid, []):
+            bad.append(f"{k} is on the Move's {pid.upper()} bank and not on the panel's")
+for b in bad: print("FAIL: " + b)
+sys.exit(1 if bad else 0)
+PYEOF
+note "the panel carries every device control, in the same bank"
+
 # 10. No file I/O on the realtime path. Reading Song.abl from set_param is the
 #     granny bug: it stalls the param channel from the SPI callback.
 for fn in stk_set_param stk_get_param stk_process_midi stk_tick; do
