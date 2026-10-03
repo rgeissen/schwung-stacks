@@ -359,8 +359,9 @@ NOTES = [
      "is its own, and nothing underneath sees them. There is no switch to take and none to strand; "
      "the host clears every LED on the way in and on the way out. The two exceptions are "
      "<strong>Play</strong> and <strong>Record</strong>, which are passed through to Move on "
-     "purpose &mdash; and Record is, today, swallowed by the shim while the tool is up, which is why "
-     "a stamp is armed here and recorded after <em>Back</em>."),
+     "purpose, so a stamp is armed here and recorded with Stacks still on screen. Record is CC 86; "
+     "it was declared as 118 &mdash; Sample &mdash; until 2026-10-03, which is why it once needed "
+     "<em>Back</em> first."),
     ("Colour is VOICING. Adding a note is SHAPE.",
      "Colour used to be a density ladder &mdash; triad, 7th, 9th &mdash; and every rung of it "
      "produced a chord that ALREADY EXISTS as a shape: <code>maj7</code>, <code>add9</code>, "
@@ -379,6 +380,12 @@ NOTES = [
      "&mdash; whether the chords came from a library, a clip, or your own hands. Browsing on "
      "<em>Start</em> lands material in that harmony and never overwrites it, so setting the key "
      "first and setting it afterwards reach the same notes."),
+    ("CLIP is what you turn while it plays.",
+     "<em>MAIN</em> sets the music up; <em>CLIP</em> holds the moves you make during it. "
+     "<em>Clip Transpose</em> and <em>Clip Octave</em> shift what SOUNDS &mdash; and what Stamp "
+     "records &mdash; without rewriting anything: Key, Scale and the degree pads stay as written, "
+     "the staff names the chords that sound, and turning back to 0 is exactly where you were. "
+     "Key is the other kind: it rewrites the progression into the new key."),
     ("CHD, RTE and BAR: music, seed, window.",
      "<em>Length</em> is an ABSOLUTE duration &mdash; eighths of a bar, so 8 is one bar, always. "
      "<em>New Chord Len</em> only seeds it: it chooses what a newly created chord gets and cannot "
