@@ -144,8 +144,11 @@ function parseProg(s) {
             vel: parseInt(f[5], 10) || 100,
             mute: f[6] === "1",
             /* The rhythm as its MASK, not its name: the grid draws the hits,
-             * and a name would mean a second copy of the pattern table here. */
-            mask: parseInt(f[7], 16) || 1,
+             * and a name would mean a second copy of the pattern table here.
+             * DECIMAL: fmt_prog prints it with %d (the header's scale mask is
+             * the hex one). Read as hex it drew a different figure than the
+             * one played -- "quarter" is 4369 = 0x1111. */
+            mask: parseInt(f[7], 10) || 1,
             /* A REST is a chord with no notes, and it is drawn rather than
              * skipped: silence you wrote must not look like a gap where
              * nothing has been placed. */
