@@ -75,3 +75,10 @@ browser panel.
 Schwung on the device with overtake tools and the Tool tab (1.4 or later).
 Nothing is patched in the host. On 1.6 or later, Read Track follows the track
 you select on Move; before that it is a knob you set yourself.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The Schwung plugin headers in `src/host/` are
+Charles Vestal's, also MIT: see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+Stacks also runs on Ableton Push 3 as
+[push-hack-stacks](https://github.com/rgeissen/push-hack-stacks).
