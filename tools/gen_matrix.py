@@ -293,6 +293,10 @@ gest = "".join(
     for g, d, n in GESTURES)
 
 NOTES = [
+    ("The browser panel is the same six banks.",
+     "Schwung's web manager, Remote UI, Tool tab, while Stacks is open: the progression on a staff, "
+     "the chords in a strip, these banks as tabs. Every region and control of it: <em>Stacks Panel</em> "
+     "(docs/panel.html)."),
     ("VEL and GAT appear twice, and mean different things.",
      "On CHORD and VOICE they are a <em>± offset</em> for that one chord; on FEEL they are the "
      "<em>base</em> every chord is measured from. Chord banks offset, global banks set — "

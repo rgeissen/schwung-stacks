@@ -20,6 +20,12 @@ slot modules must not touch Move's native UI.
     scripts/install.sh --host=IP --reload   # installs the module ONLY, then reloads
     for t in tests/*.sh; do bash "$t"; done
 
+The two pages: `python3 tools/gen_matrix.py` (the control matrix) and
+`tools/panel/build.sh` (the browser panel, from web_ui.html's own demo
+mode; the control texts are gen_matrix's DESC). Change the panel or a knob:
+regenerate in the same commit. The demo state must be a state the module
+can be in (its scale mask and defaults): the panel page is drawn from it.
+
 `--reload` is not optional after a `dsp.so` change: installing leaves the
 already-loaded instance running, so a C fix looks like it did nothing.
 

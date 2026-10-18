@@ -33,7 +33,8 @@ the same playhead and the same transport.
   (CHORD) do the same for one chord.
 * **The control matrix** — every bank, knob and gesture — is
   `docs/stacks-matrix.html`, generated from the manifest by
-  `tools/gen_matrix.py`.
+  `tools/gen_matrix.py`. The browser panel, region by region, is
+  `docs/panel.html`, made from the panel itself by `tools/panel/build.sh`.
 * **It remembers.** The progression, all sixteen patterns and every setting are
   saved to `/data/UserData/schwung/stacks/state.json` a moment after each edit
   and again on exit, and are there when you open it next — across reboots and

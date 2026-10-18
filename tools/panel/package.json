@@ -1,0 +1,6 @@
+{
+  "name": "stacks-panel-docs",
+  "private": true,
+  "description": "Screenshots of Stacks' browser panel for docs/panel.html (tools/panel/build.sh)",
+  "dependencies": { "playwright-core": "1.48.2" }
+}

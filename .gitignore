@@ -3,3 +3,4 @@ build/
 *.o
 *.so
 .DS_Store
+tools/panel/node_modules/
